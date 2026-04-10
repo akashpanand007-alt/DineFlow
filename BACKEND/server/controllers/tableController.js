@@ -40,7 +40,7 @@ export const createTable = async (req, res) => {
 
     // Construct the URL that the QR code will point to
     // This should be a route in your frontend that leads to ordering page
-    const tableUrl = `${process.env.FRONTEND_BASE_URL}/order?tableId=${newTable._id}`;
+    const tableUrl = `${process.env.CLIENT_ORIGIN}/order?tableId=${newTable._id}`;
 
     // Generate QR code (Base64)
     const qrCodeBase64 = await generateQr(tableUrl);

@@ -39,12 +39,12 @@ const port = process.env.PORT || 4000;
 const server = http.createServer(app);
 
 // Allowed frontend origin
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
 
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: CLIENT_ORIGIN,
+    origin: CLIENT_ORIGIN || "*",
     credentials: true,
   },
 });
