@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Mail, Lock, CheckCircle2 } from "lucide-react";
-import axios from "axios";
+import API from "../../api/api";
 
 const COLORS = {
   primary: "#FC5C02",
@@ -30,7 +30,7 @@ const AdminLogin = () => {
     setError("");
 
     try {
-      const res = await axios.post(
+      const res = await API.post(
         "/api/admin/login",   // ✅ fixed path
         { email, password },
         { withCredentials: true }
