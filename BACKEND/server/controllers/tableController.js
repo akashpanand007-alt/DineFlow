@@ -44,7 +44,9 @@ export const createTable = async (req, res) => {
       status: "Available",
     });
 
-    const tableUrl = `${import.meta.env.VITE_API_URL }/order?tableId=${newTable._id}`;
+    const baseUrl = process.env.CLIENT_ORIGIN ;
+
+    const tableUrl = `${baseUrl}/order?tableId=${newTable._id}`;
 
     const qrCodeBase64 = await generateQr(tableUrl);
     newTable.qrCodeUrl = qrCodeBase64;
