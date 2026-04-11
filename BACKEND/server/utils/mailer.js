@@ -12,7 +12,7 @@ export const sendOtpEmail = async ({ to, otp, expiresInMinutes = 5 }) => {
 
   try {
     const response = await resend.emails.send({
-      from: "no-reply@dineflow.com", 
+      from: "onboarding@resend.dev", 
       to,
       subject: "OTP Verification",
       html: `
