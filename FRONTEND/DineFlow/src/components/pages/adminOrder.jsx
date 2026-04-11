@@ -10,12 +10,9 @@ import {
   Inbox,
 } from "lucide-react";
 import API from "../../api/api";
-import { io } from "socket.io-client";
 import AdminSidebar from "../common/adminSideBar";
+import socket from "../../socket";
 
-const socket = io("http://localhost:4000", {
-  withCredentials: true,
-});
 
 const COLORS = {
   primary: "#FC5C02",
