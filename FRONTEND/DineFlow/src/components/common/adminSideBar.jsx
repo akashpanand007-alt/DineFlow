@@ -22,20 +22,6 @@ const COLORS = {
 const AdminSidebar = ({ sidebarOpen, setSidebarOpen }) => {
   const navigate = useNavigate();
 
-  // ✅ AUTH CHECK (runs once)
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        await API.get("/admin/is-auth", {
-          withCredentials: true,
-        });
-      } catch {
-        navigate("/admin/login");
-      }
-    };
-
-    checkAuth();
-  }, [navigate]);
 
   // ✅ BACKEND LOGOUT
   const handleLogout = async () => {

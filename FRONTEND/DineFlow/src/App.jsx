@@ -44,6 +44,7 @@ import ForgotPassword from "./components/common/forgotPassword";
 // Auth + Guards
 import { AdminAuthProvider } from "./context/adminAuthContext";
 import AdminProtectedRoute from "./routes/adminProtectedRoute";
+import KitchenProtectedRoute from "./routes/kitchenProtectedRoute";
 import { AdminOrderProvider } from "./context/adminOrderNotification";
 
 function App() {
@@ -77,9 +78,11 @@ function App() {
 <Route path="/kitchen/forgot-password" element={<KitchenForgotPassword />} />
 <Route path="/kitchen/reset-password" element={<KitchenResetPassword />} />
 
-<Route path="/kitchen" element={<KitchenLayout />}>
-  <Route path="orders" element={<KitchenDashboard />} />
-  <Route path="history" element={<KitchenHistory />} />
+<Route element={<KitchenProtectedRoute />}>
+  <Route path="/kitchen" element={<KitchenLayout />}>
+    <Route path="orders" element={<KitchenDashboard />} />
+    <Route path="history" element={<KitchenHistory />} />
+  </Route>
 </Route>
 
           {/* ===== ADMIN PUBLIC ===== */}
