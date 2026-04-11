@@ -58,11 +58,12 @@ const existingOtp = await Otp.findOne({ email, orderId });
   { upsert: true, new: true }
 );
 
-    await sendOtpEmail({
-      to: email,
-      otp: otpCode,
-      expiresInMinutes: OTP_EXPIRY_MINUTES
-    });
+    sendOtpEmail({
+  to: email,
+  otp: otpCode,
+}).catch(err => {
+  console.error("Email failed:", err);
+});
 
     res.json({
       success: true,
