@@ -21,7 +21,6 @@ const VerifyOtp = () => {
   const [timer, setTimer] = useState(30);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const otpRequested = useRef(false);
 
   useEffect(() => {
     if (!email || !orderId) {

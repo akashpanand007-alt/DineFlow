@@ -19,7 +19,7 @@ const KitchenDashboard = () => {
   const [historyOrders, setHistoryOrders] = useState([]);
   const [toast, setToast] = useState(null);
   const [now, setNow] = useState(Date.now());
-  const SERVED_TIMEOUT = 1000;
+  const SERVED_TIMEOUT = 5000;
 
   const alertSound = useRef(
     new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
@@ -115,7 +115,7 @@ useEffect(() => {
 
       const expiry = order.servedAt + SERVED_TIMEOUT;
 
-      // ✅ Remove after 5 sec (do NOT push)
+      // Remove after 5 sec (do NOT push)
       if (now < expiry) {
         remainingOrders.push(order);
       }
