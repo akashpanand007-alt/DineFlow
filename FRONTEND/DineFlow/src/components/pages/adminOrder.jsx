@@ -9,12 +9,9 @@ import {
   Menu,
   Inbox,
 } from "lucide-react";
-import axios from "axios";
+import API from "../../api/api";
 import { io } from "socket.io-client";
 import AdminSidebar from "../common/adminSideBar";
-
-axios.defaults.baseURL = "http://localhost:4000";
-axios.defaults.withCredentials = true;
 
 const socket = io("http://localhost:4000", {
   withCredentials: true,
@@ -70,7 +67,7 @@ if (ks === "READY") return "ready";
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await axios.get("/api/orders");
+        const res = await API.get("/orders");
         const mapped = (res.data?.orders || []).map(formatOrder);
         setOrders(mapped);
       } catch (err) {
@@ -121,7 +118,7 @@ if (ks === "READY") return "ready";
       )
     );
     try {
-      await axios.post("/api/orders/approve", { orderId: id });
+      await API.post("/orders/approve", { orderId: id });
     } catch (e) {
     }
   };
@@ -135,7 +132,7 @@ if (ks === "READY") return "ready";
       )
     );
     try {
-      await axios.post("/api/orders/reject", { orderId: id });
+      await API.post("/orders/reject", { orderId: id });
     } catch (e) {
     }
   };
@@ -155,14 +152,14 @@ if (ks === "READY") return "ready";
   );
 
   try {
-    await axios.post("/api/orders/serve", { orderId: id });
+    await API.post("/orders/serve", { orderId: id });
   } catch (e) {
   }
 };
 
   const handleMarkAsPaid = async (id) => {
   try {
-    await axios.patch(`/api/orders/mark-paid/${id}`);
+    await API.patch(`/orders/mark-paid/${id}`);
 
     setOrders((prev) =>
       prev.map((ord) =>
@@ -177,7 +174,7 @@ if (ks === "READY") return "ready";
 
 const handleComplete = async (id) => {
   try {
-    await axios.post("/api/orders/complete", { orderId: id });
+    await API.post("/orders/complete", { orderId: id });
 
     setOrders((prev) =>
       prev.map((ord) =>

@@ -33,7 +33,7 @@ import { initSocketServer } from "./configs/socketServer.js";
 
 
 const app = express();
-const port = process.env.PORT || 4000;
+const port = process.env.VITE_API_URL;
 
 // Create HTTP server
 const server = http.createServer(app);

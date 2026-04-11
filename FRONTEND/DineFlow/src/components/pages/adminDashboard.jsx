@@ -9,13 +9,11 @@ import {
   ClipboardList,
   Users,
 } from "lucide-react";
-import axios from "axios";
+import API from "../../api/api";
 import socket from "../../socket";
 import AdminSidebar from "../common/adminSideBar";
 import LoadingPage from "../layout/loading";
 
-axios.defaults.baseURL = "http://localhost:4000";
-axios.defaults.withCredentials = true;
 
 const COLORS = {
   primary: "#FC5C02",
@@ -51,7 +49,7 @@ const AdminDashboard = () => {
       )
     );
     try {
-      await axios.post("/api/orders/approve", { orderId });
+      await API.post("/orders/approve", { orderId });
     } catch (err) {
       setRecentOrders((prev) =>
         prev.map((o) =>
@@ -63,14 +61,14 @@ const AdminDashboard = () => {
 
   const handleServeOrder = async (orderId) => {
   try {
-    await axios.post("/api/orders/serve", { orderId });
+    await API.post("/orders/serve", { orderId });
   } catch (err) {
   }
 };
 
 const handleMarkAsPaid = async (orderId) => {
   try {
-    await axios.patch(`/api/orders/mark-paid/${orderId}`);
+    await API.patch(`/orders/mark-paid/${orderId}`);
 
     setRecentOrders((prev) =>
       prev.map((o) =>
@@ -99,7 +97,7 @@ const handleCompleteOrder = async (orderId) => {
   );
 
   try {
-    await axios.post("/api/orders/complete", { orderId });
+    await API.post("/orders/complete", { orderId });
   } catch (err) {
   }
 };
@@ -108,7 +106,7 @@ const handleCompleteOrder = async (orderId) => {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const res = await axios.get("/api/admin/dashboard");
+        const res = await API.get("/admin/dashboard");
         const data = res.data;
 
         setDashboardStats({

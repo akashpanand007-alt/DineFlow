@@ -31,7 +31,7 @@ const AdminLogin = () => {
 
     try {
       const res = await API.post(
-        "/api/admin/login",   // ✅ fixed path
+        "/admin/login",
         { email, password },
         { withCredentials: true }
       );
@@ -64,7 +64,7 @@ const AdminLogin = () => {
     setLoading(true);
     setError("");
 
-    await axios.post("/api/auth/password-reset/request", {
+    await API.post("/auth/password-reset/request", {
       email,
       role: "admin",
     });
@@ -87,7 +87,7 @@ const handleResetPassword = async () => {
     setLoading(true);
     setError("");
 
-    await axios.post("/api/auth/password-reset/verify", {
+    await API.post("/auth/password-reset/verify", {
       email,
       otp,
       newPassword,

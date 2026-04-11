@@ -12,7 +12,7 @@ import {
   Table,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import axios from "axios";   // ✅ added
+import API from "../../api/api";
 
 const COLORS = {
   primary: "#FC5C02",
@@ -26,7 +26,7 @@ const AdminSidebar = ({ sidebarOpen, setSidebarOpen }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await axios.get("/api/admin/is-auth", {
+        await API.get("/admin/is-auth", {
           withCredentials: true,
         });
       } catch {
@@ -40,7 +40,7 @@ const AdminSidebar = ({ sidebarOpen, setSidebarOpen }) => {
   // ✅ BACKEND LOGOUT
   const handleLogout = async () => {
     try {
-      await axios.post("/api/admin/logout", {}, { withCredentials: true });
+      await API.post("/admin/logout", {}, { withCredentials: true });
     } catch (e) {
       // ignore — still redirect
     }

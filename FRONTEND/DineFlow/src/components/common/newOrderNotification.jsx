@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { UtensilsCrossed } from "lucide-react";
 import socket from "../../socket";
-import axios from "axios";
 import API from "../../api/api";
 
-axios.defaults.baseURL = "http://localhost:4000";
-axios.defaults.withCredentials = true;
 
 const AdminOrderLive = () => {
   const [order, setOrder] = useState(null);
@@ -69,7 +66,7 @@ const AdminOrderLive = () => {
   const handleAccept = async () => {
     if (!order) return;
     try {
-      await axios.post("/api/orders/approve", { orderId: order._id });
+      await API.post("/orders/approve", { orderId: order._id });
       setIsVisible(false);
       setTimeout(() => setOrder(null), 300);
     } catch (err) {
@@ -79,7 +76,7 @@ const AdminOrderLive = () => {
   const handleReject = async () => {
     if (!order) return;
     try {
-      await axios.post("/api/orders/reject", { orderId: order._id });
+      await API.post("orders/reject", { orderId: order._id });
       setIsVisible(false);
       setTimeout(() => setOrder(null), 300);
     } catch (err) {
