@@ -18,6 +18,7 @@ if (!email || !orderId) {
     success: false,
     message: "Email and orderId required"
   });
+  
 }
 
 const existingOtp = await Otp.findOne({ email, orderId });
@@ -69,6 +70,7 @@ const existingOtp = await Otp.findOne({ email, orderId });
     });
 
   } catch (error) {
+     console.error("🔥 OTP ERROR:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to send OTP" });
