@@ -24,29 +24,31 @@ export const createTable = async (req, res) => {
     const { number, capacity } = req.body;
 
     if (!number) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Table number is required" });
+      return res.status(400).json({
+        success: false,
+        message: "Table number is required",
+      });
+    }
+
+    const existing = await Table.findOne({ number });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: "Table already exists",
+      });
     }
 
     const newTable = new Table({
       number,
       capacity,
-      status: "Available", // default status
+      status: "Available",
     });
 
-    // Save first to get _id
-    await newTable.save();
-
-    // Construct the URL that the QR code will point to
-    // This should be a route in your frontend that leads to ordering page
     const tableUrl = `${process.env.CLIENT_ORIGIN}/order?tableId=${newTable._id}`;
 
-    // Generate QR code (Base64)
     const qrCodeBase64 = await generateQr(tableUrl);
-
-    // Save the QR code data on the table
     newTable.qrCodeUrl = qrCodeBase64;
+
     await newTable.save();
 
     res.status(201).json({
@@ -55,12 +57,13 @@ export const createTable = async (req, res) => {
       message: "Table created with QR code",
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Could not create table" });
+    console.error("Create Table Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Could not create table",
+    });
   }
 };
-
 /**
  * Toggle Table Availability and send Socket.IO event
  * POST /api/admin/tables/toggle
