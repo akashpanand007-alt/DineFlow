@@ -33,18 +33,21 @@ import { initSocketServer } from "./configs/socketServer.js";
 
 
 const app = express();
-const port = process.env.VITE_API_URL;
+const port = process.env.PORT||4000;
 
 // Create HTTP server
 const server = http.createServer(app);
 
 // Allowed frontend origin
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN
 
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: CLIENT_ORIGIN || "*",
+    origin: [
+      "http://localhost:5173",
+      "https://dine-flow-one.vercel.app",
+    ],
     credentials: true,
   },
 });
@@ -60,9 +63,20 @@ await connectDB();
 await connectCloudinary();
 
 // CORS
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://dine-flow-one.vercel.app",
+];
+
 app.use(
   cors({
-    origin: CLIENT_ORIGIN,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
