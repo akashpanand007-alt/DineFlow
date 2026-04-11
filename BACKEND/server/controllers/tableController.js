@@ -102,3 +102,5 @@ export const toggleTableStatus = async (req, res) => {
   }
 };
 
+console.log("CLIENT_ORIGIN:", process.env.CLIENT_ORIGIN);
+
