@@ -105,11 +105,7 @@ export const requestPasswordResetOtp = async (req, res) => {
     sendOtpEmail({
   to: email,
   otp: otpCode
-}).catch(err => {
-   res
-      .status(500)
-      .json({ success: false, message: "Failed to send OTP" });
-});
+})
 
     res.json({
       success: true,
