@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Mail, Lock, CheckCircle2 } from "lucide-react";
 import API from "../../api/api";
+import { useAdminAuth } from "../../context/adminAuthContext";
 
 const COLORS = {
   primary: "#FC5C02",
@@ -12,6 +13,7 @@ const COLORS = {
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const { checkAuth } = useAdminAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,38 +23,37 @@ const AdminLogin = () => {
   const [isForgot, setIsForgot] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      setError("Please enter all fields");
-      return;
+  if (!email || !password) {
+    setError("Please enter all fields");
+    return;
+  }
+
+  setLoading(true);
+  setError("");
+
+  try {
+    const res = await API.post(
+      "/admin/login",
+      { email, password },
+      { withCredentials: true }
+    );
+
+    if (res.data?.success) {
+      setShowToast(true);
+
+      // ✅ CRITICAL FIX
+      await checkAuth();
+
+      navigate("/admin/dashboard");
+    } else {
+      setError(res.data?.message || "Invalid admin credentials");
     }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await API.post(
-        "/admin/login",
-        { email, password },
-        { withCredentials: true }
-      );
-
-      if (res.data?.success) {
-        setShowToast(true);
-
-        setTimeout(() => {
-          navigate("/admin/dashboard");
-        });
-      } else {
-        setError(res.data?.message || "Invalid admin credentials");
-      }
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Invalid admin credentials"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (err) {
+    setError(err.response?.data?.message || "Invalid admin credentials");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSendOtp = async () => {
   if (!email) {
