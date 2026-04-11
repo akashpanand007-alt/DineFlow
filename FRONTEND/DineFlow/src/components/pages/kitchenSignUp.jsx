@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Mail, Lock, ClipboardList } from "lucide-react";
-import API from "../../api/api"; // ✅ added
+import API from "../../api/api"; 
 
 const COLORS = {
   primary: "#FC5C02",
@@ -29,7 +29,7 @@ const KitchenSignup = () => {
     });
   };
 
-  // ✅ ONLY THIS FUNCTION CHANGED
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -51,7 +51,7 @@ const KitchenSignup = () => {
     try {
       setError("");
 
-      // ✅ backend call
+      
       await API.post("/kitchen/register", {
         name: formData.name,
         email: formData.email,

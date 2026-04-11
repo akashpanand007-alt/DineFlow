@@ -9,7 +9,6 @@ const socket = io(SOCKET_URL, {
 });
 
 socket.on("connect", () => {
-  console.log("✅ Socket connected:", socket.id);
 
   const kitchen = JSON.parse(localStorage.getItem("kitchen"));
 

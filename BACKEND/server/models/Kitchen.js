@@ -15,7 +15,7 @@ const kitchenSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
-      select: false, // 🔐 hide by default
+      select: false, 
     },
 
     status: {

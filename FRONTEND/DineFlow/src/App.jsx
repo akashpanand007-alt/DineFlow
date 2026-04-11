@@ -48,7 +48,6 @@ import KitchenProtectedRoute from "./routes/kitchenProtectedRoute";
 import { AdminOrderProvider } from "./context/adminOrderNotification";
 
 function App() {
-  // ✅ Global Socket Connection
   useEffect(() => {
   }, []);
 

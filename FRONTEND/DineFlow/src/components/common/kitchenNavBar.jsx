@@ -12,11 +12,11 @@ const COLORS = {
 const KitchenNavbar = ({ historyOrders }) => {
   const navigate = useNavigate();
 
-  // ✅ AUTH CHECK (kitchen session)
+  
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await API.get("/kitchen/is-auth"); // backend auth route
+        await API.get("/kitchen/is-auth"); 
       } catch {
         navigate("/kitchen/login");
       }
@@ -25,7 +25,7 @@ const KitchenNavbar = ({ historyOrders }) => {
     checkAuth();
   }, [navigate]);
 
-  // ✅ BACKEND LOGOUT
+  
   const handleLogout = async () => {
     try {
       await API.post("/kitchen/logout", {}, { withCredentials: true });

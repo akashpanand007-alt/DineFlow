@@ -9,7 +9,7 @@ export const AdminOrderProvider = ({ children }) => {
   const [incomingOrder, setIncomingOrder] = useState(null);
 
   useEffect(() => {
-    // join admins room ONCE globally
+    
     socket.emit("join", { roomType: "admins" });
 
     socket.on("new_order_alert", (order) => {

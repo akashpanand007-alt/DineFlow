@@ -28,12 +28,12 @@ const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ FIXED: clean mapStatus (no component inside)
+  
   const mapStatus = (status, kitchenStatus) => {
     const s = (status || "").toUpperCase();
     const ks = (kitchenStatus || "").toUpperCase();
 
-    // ✅ ALWAYS check orderStatus FIRST
+    
 if (s === "COMPLETED") return "completed";
 
 if (ks === "SERVED") return "served";
@@ -57,7 +57,7 @@ if (ks === "READY") return "ready";
   rawStatus: o.orderStatus,
   kitchenStatus: o.kitchenStatus,
   paymentMethod: o.payment?.method || "—",
-  paymentStatus: o.payment?.status || "PENDING", // ✅ ADD THIS
+  paymentStatus: o.payment?.status || "PENDING", 
   date: new Date(o.createdAt).toLocaleDateString(),
 });
 
@@ -142,7 +142,7 @@ if (ks === "READY") return "ready";
             ...ord,
             status: "served",
             kitchenStatus: "SERVED",
-            rawStatus: "SERVED" // ✅ ADD THIS
+            rawStatus: "SERVED" 
           }
         : ord
     )
@@ -180,7 +180,7 @@ const handleComplete = async (id) => {
               ...ord,
               status: "completed",
               rawStatus: "COMPLETED",
-              kitchenStatus: "SERVED" // keep consistent
+              kitchenStatus: "SERVED" 
             }
           : ord
       )
@@ -224,7 +224,7 @@ const UnpaidRow = ({ order, onMarkPaid }) => {
     return matchesStatus && matchesSearch;
   });
 
-  // ✅ NEW (only logic added)
+
   const unpaidOrders = filteredOrders.filter(
   (o) =>
     o.paymentStatus !== "PAID" &&

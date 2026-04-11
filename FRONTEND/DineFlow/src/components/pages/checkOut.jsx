@@ -61,7 +61,7 @@ const Checkout = () => {
           price: i.price,
         })),
         totalAmount: orderData.grandTotal,
-        payment: {method: "null"}, // default until payment page
+        payment: {method: "null"} 
       };
       const orderRes = await API.post("/orders/create", backendOrder);
 

@@ -53,7 +53,7 @@ const io = new Server(server, {
   },
 });
 
-// attach io to express (for controllers using req.app.get)
+
 app.set("io", io);
 
 // Socket connection
@@ -82,7 +82,7 @@ app.use(
   })
 );
 
-// Webhooks (must be before json parser)
+// Webhooks 
 app.use("/api/webhook", webhookRoutes);
 
 // Body parsers

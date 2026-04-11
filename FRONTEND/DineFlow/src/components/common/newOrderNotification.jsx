@@ -10,31 +10,31 @@ const AdminOrderLive = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // 1. DEFINE JOIN FUNCTION
+    
     const joinAdminRoom = () => {
       if (socket.connected) {
         socket.emit("join_admin");
       }
     };
 
-    // 2. JOIN IMMEDIATELY IF ALREADY CONNECTED
+    
     joinAdminRoom();
 
-    // 3. JOIN ON CONNECT EVENT
+    
     socket.on("connect", joinAdminRoom);
 
-    // --- ORDER HANDLER ---
+    
     const handleNewOrder = async (data) => {
       setTableName(null);
       setOrder(data);
       setIsVisible(true);
 
-      // ✅ UPDATED LOGIC: Check if table number is already populated
+      
       if (data.tableId && data.tableId.number) {
-        // Backend sent the populated object { _id: "...", number: "T4" }
+        
         setTableName(data.tableId.number);
       } else {
-        // Fallback: Fetch manually if backend sent only the ID
+        
         const tId = data.tableId?._id || data.tableId;
 
         if (tId) {
@@ -56,7 +56,7 @@ const AdminOrderLive = () => {
 
     socket.on("new_order_alert", handleNewOrder);
 
-    // --- CLEANUP ---
+    
     return () => {
       socket.off("connect", joinAdminRoom);
       socket.off("new_order_alert", handleNewOrder);

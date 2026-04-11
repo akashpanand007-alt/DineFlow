@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock, LogOut, ShieldAlert } from "lucide-react";
-import API from "../../api/api"; // ✅ added
+import API from "../../api/api"; 
 
 const COLORS = {
   primary: "#FC5C02",
@@ -13,7 +13,7 @@ const COLORS = {
 const KitchenWaitingApproval = () => {
   const navigate = useNavigate();
 
-  // ✅ CHECK APPROVAL STATUS
+  
   useEffect(() => {
     const checkStatus = async () => {
       try {
@@ -23,12 +23,12 @@ const KitchenWaitingApproval = () => {
 
         if (!kitchen) return;
 
-        // if approved → go dashboard
+        
         if (kitchen.status === "approved") {
           navigate("/kitchen/dashboard");
         }
 
-        // if rejected/deactivated → back to login
+        
         if (
           kitchen.status === "rejected" ||
           kitchen.status === "deactivated"
@@ -36,7 +36,7 @@ const KitchenWaitingApproval = () => {
           navigate("/kitchen/login");
         }
       } catch (err) {
-        // not logged in → login
+        
         navigate("/kitchen/login");
       }
     };
@@ -44,7 +44,7 @@ const KitchenWaitingApproval = () => {
     checkStatus();
   }, [navigate]);
 
-  // ✅ LOGOUT API
+ 
   const handleLogout = async () => {
     try {
       await API.post("/kitchen/logout");

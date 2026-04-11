@@ -4,7 +4,7 @@ import { addCategory, deleteCategory } from "../controllers/adminCategoryControl
 
 const router = express.Router();
 
-router.post("/", authAdmin, addCategory);             // POST /api/admin/categories
-router.delete("/:categoryId", authAdmin, deleteCategory);  // DELETE /api/admin/categories/:categoryId
+router.post("/", authAdmin, addCategory);             
+router.delete("/:categoryId", authAdmin, deleteCategory);  
 
 export default router;

@@ -2,39 +2,38 @@ import Order from "../models/Order.js";
 import Kitchen from "../models/Kitchen.js";
 import Table from "../models/Table.js";
 import { getActiveKitchenCount } from "../configs/socketServer.js";
-import mongoose from "mongoose"; // ✅ Needed for strict ID validation
+import mongoose from "mongoose"; 
 
-// Socket reference
+
 let io = null;
 export const setDashboardSocket = (ioInstance) => {
   io = ioInstance;
 };
 
-// Helpers
+
 const startOfDay = (d) => new Date(d.setHours(0, 0, 0, 0));
 const endOfDay = (d) => new Date(d.setHours(23, 59, 59, 999));
 
-// ✅ INCLUDE OTP_VERIFIED so tables appear after OTP
+
 const ACTIVE_ORDER_STATUSES = ["CREATED", "OTP_PENDING", "OTP_VERIFIED", "CONFIRMED"];
 
-// GET /api/admin/dashboard
+
 export const getDashboardData = async (req, res) => {
   try {
     const now = new Date();
-    // TODAY
+
 const dailyStart = startOfDay(new Date());
 const dailyEnd = endOfDay(new Date());
 
-    // WEEK
+
 const weeklyStart = new Date(now);
-weeklyStart.setDate(now.getDate() - now.getDay()); // Sunday start
+weeklyStart.setDate(now.getDate() - now.getDay()); 
 weeklyStart.setHours(0, 0, 0, 0);
 
-// MONTH
+
 const monthlyStart = new Date(now.getFullYear(), now.getMonth(), 1);
 monthlyStart.setHours(0, 0, 0, 0);
 
-// YEAR
 const yearlyStart = new Date(now.getFullYear(), 0, 1);
 yearlyStart.setHours(0, 0, 0, 0);
 
@@ -50,7 +49,7 @@ yearlyStart.setHours(0, 0, 0, 0);
       }
     };
 
-    // ===== Analytics =====
+
 const dailyStats = await Order.aggregate([
   {
     $match: {
@@ -161,20 +160,19 @@ const recentOrders = recentOrdersRaw.map((o) => ({
   amount: o.totalAmount,
   status: o.orderStatus,
   kitchenStatus: o.kitchenStatus,
-  paymentStatus: o.payment?.status || "PENDING", // ✅ ADD THIS
+  paymentStatus: o.payment?.status || "PENDING", 
   time: o.createdAt
 }));
 
-    // ===== Recent Tables =====
-    // 1. Get IDs of tables with active orders
+
     const activeTableIds = await Order.distinct("tableId", {
   tableId: { $ne: null },
   orderStatus: { $in: ACTIVE_ORDER_STATUSES },
   "adminApproval.rejected": false
 });
 
-    // 2. Fetch those tables directly
-    // ===== Recent Tables =====
+
+
 const recentTablesRaw = await Table.find({
   status: "Occupied"
 })
@@ -220,31 +218,29 @@ const recentTables = recentTablesRaw.map(t => ({
   }
 };
 
-// TEMPORARY DEBUG ROUTE (Keep for now if needed)
+
 export const debugDashboardData = async (req, res) => {
   try {
     const orders = await Order.find().limit(5).lean();
     
-    // 1. Fetch ALL tables
+
     const allTables = await Table.find().lean();
 
-    // 2. Create a map for fast lookup: ID -> Number
+
     const tableMap = {};
     allTables.forEach(t => {
       tableMap[t._id.toString()] = t.number;
     });
 
-    // 3. Find a "Fallback" table (just in case the order's link is broken)
-    // We will use the first table found (e.g., T4)
+
     const fallbackTable = allTables[0];
 
     const diagnostics = orders.map(o => {
       const rawTableId = o.tableId?.toString();
-      
-      // Check if the specific ID exists in our map
+
       let tableNumber = rawTableId ? tableMap[rawTableId] : null;
 
-      // If NOT found (broken link), use the Fallback table number
+
       if (!tableNumber && fallbackTable) {
         tableNumber = fallbackTable.number;
       }

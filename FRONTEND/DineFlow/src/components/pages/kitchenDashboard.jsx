@@ -25,9 +25,7 @@ const KitchenDashboard = () => {
     new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
   );
 
-  // =========================
-  // FETCH ACTIVE
-  // =========================
+  
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -40,9 +38,7 @@ const KitchenDashboard = () => {
     fetchOrders();
   }, []);
 
-  // =========================
-  // SOCKET LIVE ORDERS + JOIN
-  // =========================
+  
   useEffect(() => {
     socket.on("order_approved", (o) => {
       const mapped = {
@@ -63,7 +59,7 @@ const KitchenDashboard = () => {
   setOrders((prev) =>
     prev.map((ord) => {
       if (ord.id === o._id) {
-        // 🔥 Detect SERVED transition
+        
         if (o.kitchenStatus === "SERVED") {
   setToast({
     id: o._id,
@@ -97,7 +93,7 @@ const KitchenDashboard = () => {
 
   useEffect(() => {
   const interval = setInterval(() => {
-    setNow((prev) => prev + 1000); // 🔥 force state change
+    setNow((prev) => prev + 1000);
   }, 1000);
 
   return () => clearInterval(interval);
@@ -115,7 +111,7 @@ useEffect(() => {
 
       const expiry = order.servedAt + SERVED_TIMEOUT;
 
-      // Remove after 5 sec (do NOT push)
+      
       if (now < expiry) {
         remainingOrders.push(order);
       }
@@ -125,9 +121,7 @@ useEffect(() => {
   });
 }, [now]);
 
-  // =========================
-  // TOAST AUTO DISMISS
-  // =========================
+ 
   useEffect(() => {
     if (!toast) return;
 
@@ -138,9 +132,7 @@ useEffect(() => {
     return () => clearTimeout(t);
   }, [toast]);
 
-  // =========================
-  // SOUND ALERT (WAITING)
-  // =========================
+  
   useEffect(() => {
     const hasWaiting = orders.some((order) => order.status === "WAITING");
 
@@ -158,9 +150,7 @@ useEffect(() => {
     };
   }, [orders]);
 
-  // =========================
-  // UPDATE STATUS
-  // =========================
+  
   const updateStatus = async (id, status) => {
     try {
       await API.put(`/orders/${id}/status`, {

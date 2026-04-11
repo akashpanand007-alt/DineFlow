@@ -10,16 +10,16 @@ import {
 
 const router = express.Router();
 
-// Register (public)
+
 router.post("/register", kitchenRegister);
 
-// Login
+
 router.post("/login", kitchenLogin);
 
-// Check auth
+
 router.get("/is-auth", isKitchenAuth);
 
-// Logout
+
 router.post("/logout", kitchenLogout);
 
 

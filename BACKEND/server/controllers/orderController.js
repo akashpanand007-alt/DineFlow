@@ -358,7 +358,7 @@ exports.serveOrder = async (req, res) => {
 
     order.kitchenStatus = "SERVED";
 order.orderStatus = "COMPLETED";
-order.servedAt = new Date(); // ✅ FIX
+order.servedAt = new Date(); 
 
     await order.save();
 

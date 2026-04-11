@@ -41,7 +41,7 @@ const AdminLogin = () => {
     if (res.data?.success) {
       setShowToast(true);
 
-      // ✅ CRITICAL FIX
+      
       await checkAuth();
 
       navigate("/admin/dashboard");

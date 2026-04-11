@@ -46,9 +46,9 @@ export const rejectKitchen = async (req, res) => {
   }
 };
 
-// controllers/adminKitchenController.js
 
-// existing functions...
+
+
 
 export const deactivateKitchen = async (req, res) => {
   try {

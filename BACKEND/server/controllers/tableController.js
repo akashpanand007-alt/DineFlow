@@ -59,7 +59,6 @@ export const createTable = async (req, res) => {
       message: "Table created with QR code",
     });
   } catch (error) {
-    console.error("Create Table Error:", error);
     res.status(500).json({
       success: false,
       message: "Could not create table",
@@ -87,7 +86,7 @@ export const toggleTableStatus = async (req, res) => {
         .json({ success: false, message: "Table not found" });
     }
 
-    // Emit live update
+    
     io.to("admins").emit("table_map_update", updatedTable);
 
     res.status(200).json({
@@ -102,5 +101,5 @@ export const toggleTableStatus = async (req, res) => {
   }
 };
 
-console.log("CLIENT_ORIGIN:", process.env.CLIENT_ORIGIN);
+
 

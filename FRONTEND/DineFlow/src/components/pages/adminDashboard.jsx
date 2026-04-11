@@ -40,7 +40,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // --- ACTION HANDLERS ---
+  
 
   const handleAcceptOrder = async (orderId) => {
     setRecentOrders((prev) =>
@@ -82,7 +82,7 @@ const handleMarkAsPaid = async (orderId) => {
 };
 
 const handleCompleteOrder = async (orderId) => {
-  // optimistic UI update
+  
   setRecentOrders((prev) =>
     prev.map((o) =>
       o._id === orderId
@@ -101,7 +101,7 @@ const handleCompleteOrder = async (orderId) => {
   } catch (err) {
   }
 };
-  // --- DATA FETCHING ---
+  
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -132,17 +132,16 @@ const handleCompleteOrder = async (orderId) => {
     fetchDashboard();
   }, []);
 
-  // --- SOCKET CONNECTION (For Dashboard List Updates) ---
+  
 
   useEffect(() => {
-    // Logic to join admin room is now in App.js, 
-    // but we still need to listen for updates to refresh this page's list.
+    
 
     const upsertOrder = (order) => {
       setRecentOrders((prev) => {
         const exists = prev.some((o) => o._id === order._id);
 
-        // Handle Table ID normalization
+        
         let tableDisplay = "—";
         if (typeof order.tableId === 'string') {
             tableDisplay = order.tableId;
@@ -160,7 +159,7 @@ const handleCompleteOrder = async (orderId) => {
   tableId: tableDisplay,
   amount: order.totalAmount || order.amount || 0,
   paymentMethod: order.payment?.method || "—",
-  paymentStatus: order.payment?.status || "—"   // ✅ NEW
+  paymentStatus: order.payment?.status || "—"   
 };
 
         if (exists) {
@@ -230,7 +229,7 @@ const handleCompleteOrder = async (orderId) => {
   );
 };
 
-// --- Sub Components --
+
 
 const DashboardHeader = () => (
   <div className="mb-10">
@@ -290,7 +289,7 @@ const paymentLabel =
 
 let status = "pending";
 
-// ✅ FIRST PRIORITY
+
 if (rawStatus === "COMPLETED") status = "completed";
 else if (rawStatus === "CREATED") status = "pending";
 else if (rawStatus === "CONFIRMED") status = "live";
@@ -299,7 +298,7 @@ else if (rawStatus === "OTP_VERIFIED") status = "pending";
 else if (rawStatus === "CANCELLED") status = "cancelled";
 else if (rawStatus === "REJECTED") status = "rejected";
 
-// ✅ ONLY override if NOT completed
+
 if (rawStatus !== "COMPLETED") {
   if (kitchenStatus === "READY") status = "ready";
   if (kitchenStatus === "SERVED") status = "served";

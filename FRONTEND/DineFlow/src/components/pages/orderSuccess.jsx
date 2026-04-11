@@ -7,7 +7,7 @@ const OrderSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ support both navigation shapes
+  
   const orderId =
     location.state?.orderId ||
     location.state?.orderData?.orderId;

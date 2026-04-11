@@ -26,9 +26,7 @@ const AdminKitchens = () => {
   const [search, setSearch] = useState("");
   const [kitchens, setKitchens] = useState([]);
 
-  // =========================
-  // FETCH FROM BACKEND
-  // =========================
+
   useEffect(() => {
     const fetchKitchens = async () => {
       try {
@@ -41,9 +39,7 @@ const AdminKitchens = () => {
     fetchKitchens();
   }, []);
 
-  // =========================
-  // SOCKET LIVE SYNC
-  // =========================
+ 
   useEffect(() => {
     socket.emit("join", { roomType: "admins" });
 
@@ -70,9 +66,6 @@ const AdminKitchens = () => {
     };
   }, []);
 
-  // =========================
-  // ACTION HANDLERS
-  // =========================
   const approveKitchen = async (id) => {
     try {
       await API.post("/admin/kitchens/approve", {
@@ -100,7 +93,7 @@ const AdminKitchens = () => {
     }
   };
 
-  // ✅ NEW: reactivate
+
   const reactivateKitchen = async (id) => {
     try {
       await API.patch("/admin/kitchens/reactivate", {
@@ -117,9 +110,7 @@ const AdminKitchens = () => {
     }
   };
 
-  // =========================
-  // FILTER + SEARCH
-  // =========================
+
   const filteredKitchens = kitchens.filter((kitchen) => {
     const matchesStatus =
       activeFilter === "all" ||

@@ -2,7 +2,7 @@ import User from "../models/User.js"
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
-//Register user : /api/user/register
+
 export const register = async(req,res)=>{
     try {
         const {name ,email,password} = req.body
@@ -19,10 +19,10 @@ export const register = async(req,res)=>{
     
         const token = jwt.sign({id: user._id},process.env.JWT_SECRET,{expiresIn : '7D'})
         res.cookie('token', token,{
-            httpOnly:true, //Prevent JavaScript to access cookie
-            secure: process.env.NODE_ENV === 'production', //Use secure cookies in prodution
-            sameSite: process.env.NODE_ENV === 'production' ? 'none':'strict', //CSRF Protection
-            maxAge: 7 * 24 * 60 * 60 * 1000,//Cookie expiration time
+            httpOnly:true, 
+            secure: process.env.NODE_ENV === 'production', 
+            sameSite: process.env.NODE_ENV === 'production' ? 'none':'strict', 
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         })
         return res.json({success : true, user : {email:user.email, name:user.name}})
 
@@ -32,7 +32,7 @@ export const register = async(req,res)=>{
 }
 
 
-//Login User :/api/user/login 
+
 
 export const login = async (req,res) =>{
     try {
@@ -55,10 +55,10 @@ export const login = async (req,res) =>{
 
         const token = jwt.sign({id: user._id},process.env.JWT_SECRET,{expiresIn : '7D'})
         res.cookie('token', token,{
-            httpOnly:true, //Prevent JavaScript to access cookie
-            secure: process.env.NODE_ENV === 'production', //Use secure cookies in prodution
-            sameSite: process.env.NODE_ENV === 'production' ? 'none':'strict', //CSRF Protection
-            maxAge: 7 * 24 * 60 * 60 * 1000,//Cookie expiration time
+            httpOnly:true, 
+            secure: process.env.NODE_ENV === 'production', 
+            sameSite: process.env.NODE_ENV === 'production' ? 'none':'strict', 
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         })
         return res.json({success : true, user : {email:user.email, name:user.name}})
 
@@ -67,7 +67,7 @@ export const login = async (req,res) =>{
     }
 }
 
-//Check Auth :/api/user/is-auth
+
 
 export const isAuth = async(req,res)=>{
     try {
@@ -79,7 +79,7 @@ export const isAuth = async(req,res)=>{
     }
 }
 
-//Logout User :/api/user/logout
+
 
 export const logout = async (req,res)=>{
     try {

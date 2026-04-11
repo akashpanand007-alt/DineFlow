@@ -10,7 +10,7 @@ import {
 import AdminSidebar from "../common/adminSideBar";
 import API from "../../api/api";
 import socket from "../../socket";
-import AddProductModal from "../common/addProductModal"; // ✅ NEW
+import AddProductModal from "../common/addProductModal"; 
 
 const COLORS = {
   primary: "#FC5C02",
@@ -33,7 +33,7 @@ const AdminProducts = () => {
     ),
   ];
 
-  // ================= FETCH =================
+ 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -51,7 +51,7 @@ const AdminProducts = () => {
     fetchProducts();
   }, []);
 
-  // ================= SOCKET =================
+ 
   useEffect(() => {
     socket.emit("join", { roomType: "admins" });
 
@@ -83,7 +83,7 @@ const AdminProducts = () => {
     };
   }, []);
 
-  // ================= FILTER =================
+  
   const filteredProducts = products.filter((p) => {
     const matchCategory =
       activeCategory === "all" || p.category === activeCategory;
@@ -93,7 +93,7 @@ const AdminProducts = () => {
     return matchCategory && matchSearch;
   });
 
-  // ================= ACTIONS =================
+  
   const handleDelete = async (id) => {
     try {
       setProducts((prev) =>

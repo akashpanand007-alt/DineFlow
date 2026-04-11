@@ -21,7 +21,7 @@ const KitchenProtectedRoute = () => {
     checkAuth();
   }, []);
 
-  if (loading) return null; // or loader
+  if (loading) return null; 
 
   return isAuth ? <Outlet /> : <Navigate to="/kitchen/login" replace />;
 };

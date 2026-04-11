@@ -1,6 +1,6 @@
 import Category from "../models/Category.js";
 
-// Create category (Admin)
+
 export const addCategory = async (req, res) => {
   try {
     const { name } = req.body;
@@ -16,7 +16,7 @@ export const addCategory = async (req, res) => {
   }
 };
 
-// Delete category (Admin)
+
 export const deleteCategory = async (req, res) => {
   try {
     const { categoryId } = req.params;

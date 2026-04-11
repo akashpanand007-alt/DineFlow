@@ -21,7 +21,7 @@ router.get(
   adminGetProducts
 );
 
-// Admin adds a new product (images uploaded to Cloudinary)
+
 router.post(
   "/add",
   authAdmin,
@@ -29,7 +29,7 @@ router.post(
   adminAddProduct
 );
 
-// Admin deletes a product by ID
+
 router.delete(
   "/delete/:productId",
   authAdmin,

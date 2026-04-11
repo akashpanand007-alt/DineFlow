@@ -17,7 +17,7 @@ const KitchenForgotPassword = () => {
 
   const [toast, setToast] = useState({
     show: false,
-    type: "", // success | error
+    type: "", 
     message: "",
   });
 
@@ -47,12 +47,12 @@ const KitchenForgotPassword = () => {
   message: res.data.message || "OTP sent to your email",
 });
 
-// 👇 ADD THIS
+
 setTimeout(() => {
   navigate("/kitchen/reset-password", { state: { email } });
 }, 1200);
 
-      setEmail(""); // optional reset
+      setEmail(""); 
     } catch (err) {
       setToast({
         show: true,
@@ -64,7 +64,7 @@ setTimeout(() => {
 
     setLoading(false);
 
-    // auto-hide toast
+    
     setTimeout(() => {
       setToast({ show: false, type: "", message: "" });
     }, 2500);

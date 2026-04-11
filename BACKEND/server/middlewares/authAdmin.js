@@ -12,7 +12,7 @@ const authAdmin = (req, res, next) => {
 
     const decoded = jwt.verify(adminToken, process.env.JWT_SECRET);
 
-    req.admin = decoded; // ✅ contains id + email
+    req.admin = decoded; 
     next();
 
   } catch (error) {

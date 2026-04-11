@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { XCircle, RefreshCcw } from "lucide-react";
-import API from "../../api/api";   // ✅ added
+import API from "../../api/api";   
 
 const OrderFailed = () => {
   const navigate = useNavigate();
@@ -9,14 +9,14 @@ const OrderFailed = () => {
 
   const orderData = location.state?.orderData;
 
-  // ✅ notify backend that payment failed
+  
   useEffect(() => {
     if (!orderData?.orderId) return;
 
     API.post("/payments/fail", {
       orderId: orderData.orderId,
     }).catch(() => {
-      // ignore failure — UI still shows
+      
     });
   }, [orderData]);
 

@@ -19,13 +19,7 @@ import {
 
 const productRouter = express.Router();
 
-/**
- * ======================
- * Admin Product Routes
- * ======================
- */
 
-// Admin adds a new product (with images)
 productRouter.post(
   "/add",
   authAdmin,
@@ -40,11 +34,7 @@ productRouter.delete(
   adminDeleteProduct
 );
 
-/**
- * ======================
- * Kitchen Stock Routes
- * ======================
- */
+
 
 // Kitchen updates product stock/availability
 productRouter.post(
@@ -53,14 +43,7 @@ productRouter.post(
   updateKitchenStock
 );
 
-/**
- * ======================
- * Public Product Routes
- * ======================
- */
 
-// Get products with optional category filtering
-// Example: GET /api/products/list?category=Pizza
 productRouter.get("/list", productList);
 
 // Get single product by ID

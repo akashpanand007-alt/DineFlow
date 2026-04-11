@@ -13,17 +13,17 @@ const CartPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ carry tableId from Menu
+  
   const tableId = location.state?.tableId || null;
 
-  // Fallback safety
+  
   const cart = location.state?.cart || {};
   const passedItems = location.state?.items || [];
 
   const [items, setItems] = useState(passedItems);
   const [instruction, setInstruction] = useState("");
 
-  // 🔹 Fetch items from backend if not passed
+  
   useEffect(() => {
     if (passedItems.length === 0) {
       API.get("/product/list")
@@ -50,7 +50,7 @@ const CartPage = () => {
     }
   }, [passedItems]);
 
-  // Build cart items safely
+ 
   const initialCartItems = useMemo(() => {
     return Object.keys(cart)
       .map((id) => {
@@ -70,7 +70,7 @@ const CartPage = () => {
     setCartItems(initialCartItems);
   }, [initialCartItems]);
 
-  // Totals
+ 
   const itemTotal = cartItems.reduce(
     (acc, item) => acc + item.price * item.qty,
     0
@@ -78,7 +78,7 @@ const CartPage = () => {
   const taxes = Math.round(itemTotal * 0.05);
   const grandTotal = itemTotal + taxes;
 
-  // Update quantity
+  
   const updateQty = (id, delta) => {
     setCartItems((prev) =>
       prev
@@ -91,17 +91,17 @@ const CartPage = () => {
     );
   };
 
-  // Remove item
+  
   const removeItem = (id) => {
     setCartItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // 👉 Proceed to Checkout (with tableId)
+  
   const handlePlaceOrder = () => {
     navigate("/checkout", {
       state: {
         orderData: {
-          tableId, // ✅ REQUIRED by backend
+          tableId, 
           cartItems,
           instruction,
           itemTotal,
@@ -112,7 +112,7 @@ const CartPage = () => {
     });
   };
 
-  // Empty cart UI
+  
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-[#E2CEAE] flex flex-col items-center justify-center">

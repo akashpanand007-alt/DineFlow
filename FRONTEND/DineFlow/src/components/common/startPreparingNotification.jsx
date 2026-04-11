@@ -17,17 +17,17 @@ const KitchenLiveNotification = () => {
     socket.emit("join_kitchen");
   };
 
-  // ✅ ONLY attach listeners (no manual connect)
+  
   socket.on("connect", joinKitchen);
   socket.on("order_approved", handleOrderApproved);
   socket.on("order_approved_global", handleOrderApproved);
 
-  // ✅ Join immediately if already connected
+  
   if (socket.connected) {
     joinKitchen();
   }
 
-  // ✅ API fallback
+  
   const checkWaitingOrders = async () => {
     try {
       const res = await API.get("/orders/kitchen/active");
@@ -46,7 +46,7 @@ const KitchenLiveNotification = () => {
   checkWaitingOrders();
 
   return () => {
-    // ✅ SAFE CLEANUP
+    
     socket.off("order_approved", handleOrderApproved);
     socket.off("order_approved_global", handleOrderApproved);
     socket.off("connect", joinKitchen);
@@ -63,7 +63,7 @@ await API.put(`/orders/${orderId}/status`, {
       kitchenStatus: "PREPARING",
     });
 
-    // notify other kitchen screens
+    
     socket.emit("order_status_changed", {
       _id: order._id,
       kitchenStatus: "PREPARING",

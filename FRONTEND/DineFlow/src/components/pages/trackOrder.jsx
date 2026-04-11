@@ -26,13 +26,11 @@ const TrackOrder = () => {
 
   const joinedRef = useRef(false);
 
-  // =========================
-  // MAP BACKEND → UI STEP
-  // =========================
+  
   const mapStatus = (order) => {
     if (!order) return "awaiting";
 
-    // 🔥 rejection priority
+    
     if (order.orderStatus === "REJECTED") return "rejected";
 
     if (order.kitchenStatus === "PREPARING") return "preparing";
@@ -44,9 +42,7 @@ const TrackOrder = () => {
     return "awaiting";
   };
 
-  // =========================
-  // INITIAL FETCH
-  // =========================
+  
   useEffect(() => {
     if (!orderId) return;
 
@@ -69,9 +65,7 @@ const TrackOrder = () => {
       });
   }, [orderId]);
 
-  // =========================
-  // SOCKET JOIN + LIVE UPDATE
-  // =========================
+  
   useEffect(() => {
     if (!email || !orderId) return;
 
@@ -100,9 +94,7 @@ const eventName = `customer_status_update_${normalizedEmail}`;
     };
   }, [email, orderId]);
 
-  // =========================
-  // STEP STATE HELPERS
-  // =========================
+  
   const isApproved = ["approved","preparing","ready","served"].includes(status);
   const isPreparing = ["preparing","ready","served"].includes(status);
   const isReady = ["ready","served"].includes(status);

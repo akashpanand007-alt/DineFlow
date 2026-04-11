@@ -1,9 +1,9 @@
-// configs/socketServer.js
 
-const activeKitchenSessions = new Set(); // login-based presence
+
+const activeKitchenSessions = new Set(); 
 let ioRef = null;
 
-// ===== PUBLIC HELPERS (LOGIN / LOGOUT ONLY) =====
+
 export const markKitchenOnline = (kitchenId) => {
   if (!kitchenId) return;
 
@@ -33,13 +33,13 @@ export const markKitchenOffline = (kitchenId) => {
 export const getActiveKitchenCount = () =>
   activeKitchenSessions.size;
 
-// ===== SOCKET SERVER INIT =====
+
 export const initSocketServer = (io) => {
   ioRef = io;
 
   io.on("connection", (socket) => {
 
-    // ADMIN JOIN
+
     socket.on("join_admin", () => {
       socket.join("admins");
       socket.emit(
@@ -48,15 +48,12 @@ export const initSocketServer = (io) => {
       );
     });
 
-    // ✅ KITCHEN JOIN (required for kitchen notifications)
+   
     socket.on("join_kitchen", () => {
       socket.join("kitchen");
 
     });
 
-    // ❗ NO kitchen_online here
-    // ❗ NO disconnect removal
-    // Presence is LOGIN/LOGOUT based only
 
     socket.on("disconnect", () => {
 

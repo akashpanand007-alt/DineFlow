@@ -4,6 +4,6 @@ import { updateKitchenStock } from "../controllers/kitchenProductController.js";
 
 const router = express.Router();
 
-router.post("/update-stock", authKitchen, updateKitchenStock);  // POST /api/kitchen/products/update-stock
+router.post("/update-stock", authKitchen, updateKitchenStock);  
 
 export default router;

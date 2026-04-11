@@ -23,7 +23,7 @@ if (!email || !orderId) {
 
 const existingOtp = await Otp.findOne({ email, orderId });
 
-    // 🔁 COOLDOWN CHECK (60 seconds)
+
     if (existingOtp?.lastSentAt) {
       const secondsPassed =
         (Date.now() - new Date(existingOtp.lastSentAt).getTime()) / 1000;
@@ -38,7 +38,7 @@ const existingOtp = await Otp.findOne({ email, orderId });
       }
     }
 
-    // 🔐 GENERATE OTP
+
     const otpCode = crypto.randomInt(100000, 999999).toString();
 
     const expiresAt = new Date(
@@ -61,9 +61,7 @@ const existingOtp = await Otp.findOne({ email, orderId });
     sendOtpEmail({
   to: email,
   otp: otpCode,
-}).catch(err => {
-  console.error("Email failed:", err);
-});
+})
 
     res.json({
       success: true,
@@ -71,7 +69,6 @@ const existingOtp = await Otp.findOne({ email, orderId });
     });
 
   } catch (error) {
-     console.error("🔥 OTP ERROR:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to send OTP" });
@@ -158,7 +155,7 @@ export const verifyPasswordResetOtp = async (req, res) => {
       });
     }
 
-    // 🔥 PASSWORD UPDATE LOGIC
+
 
     const Model = role === "admin" ? Admin : Kitchen;
 
@@ -176,7 +173,7 @@ export const verifyPasswordResetOtp = async (req, res) => {
     user.password = hashed;
     await user.save();
 
-    // 🔥 delete OTP
+
     await Otp.deleteOne({ email, purpose: "password_reset" });
 
     res.json({
@@ -228,7 +225,7 @@ export const verifyOtp = async (req, res) => {
       });
     }
 
-    // ✅ MARK ORDER AS OTP VERIFIED
+
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({
@@ -242,14 +239,13 @@ export const verifyOtp = async (req, res) => {
       verifiedAt: new Date()
     };
 
-    // ✅ CORRECT FLOW: move to admin approval stage
     if (order.orderStatus === "OTP_PENDING") {
       order.orderStatus = "OTP_VERIFIED";
     }
 
     await order.save();
 
-    // 🔥 DELETE OTP AFTER SUCCESS
+
     await Otp.deleteOne({ email, orderId });
 
     res.json({

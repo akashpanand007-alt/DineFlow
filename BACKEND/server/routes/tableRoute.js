@@ -82,7 +82,7 @@ router.delete("/:id", authAdmin, async (req, res, next) => {
         .json({ success: false, message: "Table not found" });
     }
 
-    // Notify all admins/clients that a table was deleted
+    
     req.app.get("io").emit("table_deleted", id);
 
     res.json({ success: true });

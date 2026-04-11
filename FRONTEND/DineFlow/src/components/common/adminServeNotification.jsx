@@ -7,23 +7,22 @@ const AdminServeNotification = () => {
   const [order, setOrder] = useState(null);
   const [visible, setVisible] = useState(false);
 
-  // Audio reference from your backend logic snippet
+  
   const soundRef = useRef(
     new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg")
   );
 
   useEffect(() => {
     const handleOrderStatusChanged = (updatedOrder) => {
-      // ✅ Only trigger if the kitchen status is specifically READY
+      
       if (updatedOrder.kitchenStatus !== "READY") return;
 
       
-      // We pass the whole object (instead of mapping just id/table) 
-      // so the UI can still map through order.items
+      
       setOrder(updatedOrder);
       setVisible(true);
 
-      // Play the notification sound
+      
       soundRef.current.currentTime = 0;
     };
 
@@ -31,7 +30,7 @@ const AdminServeNotification = () => {
       socket.emit("join_admin");
     };
 
-    // Attach listener for the correct event
+    
     socket.on("order_status_changed", handleOrderStatusChanged);
     socket.on("connect", joinServiceRoom);
 
@@ -39,7 +38,7 @@ const AdminServeNotification = () => {
       joinServiceRoom();
     }
 
-    // Fallback check: grabs existing READY orders if they refresh the page
+    
     const checkReadyOrders = async () => {
       try {
         const res = await API.get("/orders/service/active");
@@ -69,13 +68,13 @@ const AdminServeNotification = () => {
     try {
       const orderId = order._id || order.id;
 
-      // Update backend
+      
       await API.put(`/orders/${orderId}/status`, {
   orderId: orderId,
   kitchenStatus: "SERVED",
 });
 
-      // Notify other screens to clear the alert
+      
       socket.emit("order_status_changed", {
         _id: orderId,
         status: "SERVED",

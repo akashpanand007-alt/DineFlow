@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema(
   {
-    // 📍 TABLE ASSOCIATION
+    
     tableId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Table",
@@ -10,7 +10,7 @@ const orderSchema = new mongoose.Schema(
       index: true
     },
 
-    // 🧑‍💼 CUSTOMER DETAILS
+    
     customerName: {
       type: String,
       required: true,
@@ -23,7 +23,7 @@ const orderSchema = new mongoose.Schema(
       trim: true
     },
 
-    // 🛒 ORDER ITEMS
+    
     items: [
       {
         productId: {
@@ -44,7 +44,7 @@ const orderSchema = new mongoose.Schema(
       index: true
     },
 
-    // 🔐 OTP VERIFICATION
+    
     otpVerification: {
       otp: { type: String, default: null },
       expiresAt: { type: Date, default: null },
@@ -53,7 +53,7 @@ const orderSchema = new mongoose.Schema(
       attempts: { type: Number, default: 0 }
     },
 
-    // 💳 PAYMENT DETAILS
+    
     payment: {
       method: {
         type: String,
@@ -70,7 +70,7 @@ const orderSchema = new mongoose.Schema(
       paidAt: { type: Date, default: null }
     },
 
-    // 🧑‍💼 ADMIN APPROVAL
+    
     adminApproval: {
       approved: { type: Boolean, default: false },
       approvedBy: {
@@ -83,7 +83,7 @@ const orderSchema = new mongoose.Schema(
       rejectionReason: { type: String, default: null }
     },
 
-    // 👨‍🍳 KITCHEN STATUS
+    
     kitchenStatus: {
       type: String,
       enum: ["WAITING", "PREPARING", "READY", "SERVED", "CANCELLED"],
@@ -91,7 +91,7 @@ const orderSchema = new mongoose.Schema(
       index: true
     },
 
-    // 📜 ORDER LIFECYCLE
+    
     orderStatus: {
       type: String,
       enum: [
@@ -107,7 +107,7 @@ const orderSchema = new mongoose.Schema(
       default: "CREATED"
     },
 
-    // ✅ FIXED — now properly inside schema
+    
     servedAt: {
       type: Date,
       default: null,

@@ -8,7 +8,7 @@ const COLORS = {
 };
 
 const AddProductModal = ({ open, onClose, onCreated }) => {
-  const fileRef = useRef(null); // ✅ hidden input ref
+  const fileRef = useRef(null); 
 
   const [form, setForm] = useState({
     name: "",
@@ -23,7 +23,7 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
 
   if (!open) return null;
 
-  // ================= IMAGE PICK =================
+  
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files || []);
     setForm((prev) => ({
@@ -36,7 +36,7 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
     fileRef.current?.click();
   };
 
-  // ================= SAVE =================
+  
   const handleSave = async () => {
     try {
       const formData = new FormData();

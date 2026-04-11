@@ -8,7 +8,7 @@ export default function MenuPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ tableId ONLY from QR/state/query (no fallback)
+  
   const tableId =
     location.state?.tableId ||
     new URLSearchParams(location.search).get("tableId");
@@ -24,7 +24,7 @@ export default function MenuPage() {
 
   const [activeOrder, setActiveOrder] = useState(null);
 
-  // 🔹 FETCH TABLE NAME
+  
  useEffect(() => {
   if (!tableId) return;
 
@@ -37,7 +37,7 @@ export default function MenuPage() {
     });
 }, [tableId]);
 
-  // 🔹 FETCH PRODUCTS
+ 
   useEffect(() => {
     API.get("/product/list")
       .then((res) => {
@@ -82,7 +82,7 @@ export default function MenuPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // ✅ FETCH ACTIVE ORDER
+  
   useEffect(() => {
     if (!tableId) return;
 

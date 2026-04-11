@@ -23,12 +23,12 @@ const AdminSidebar = ({ sidebarOpen, setSidebarOpen }) => {
   const navigate = useNavigate();
 
 
-  // ✅ BACKEND LOGOUT
+
   const handleLogout = async () => {
     try {
       await API.post("/admin/logout", {}, { withCredentials: true });
     } catch (e) {
-      // ignore — still redirect
+
     }
 
     toast.success("Logged out successfully", {

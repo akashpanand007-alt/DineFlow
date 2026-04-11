@@ -5,14 +5,14 @@ export default function AdminProtectedRoute() {
   const { admin, loading } = useAdminAuth();
   const location = useLocation();
 
-  // Wait until auth check completes
-  if (loading) return null; // or loader component
+  
+  if (loading) return null; 
 
-  // Not authenticated → redirect to login
+  
   if (!admin) {
     return <Navigate to="/admin/login" replace state={{ from: location }} />;
   }
 
-  // Authenticated → render admin routes
+  
   return <Outlet />;
 }

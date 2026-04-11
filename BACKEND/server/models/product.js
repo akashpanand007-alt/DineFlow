@@ -33,25 +33,25 @@ const productSchema = new mongoose.Schema(
 
   variants: [
     {
-      name: { type: String },        // Half, Full, Large, etc
+      name: { type: String },        
       price: { type: Number, required: true }
     }
   ],
 
   dietType: {
       type: String,
-      enum: ["VEG", "NON_VEG"], // optional third type
+      enum: ["VEG", "NON_VEG"], 
       required: true,
-      default: "VEG",           // default if not provided
+      default: "VEG",           
     },
 
-  // Admin Controls
+  
   isActive: {
     type: Boolean,
-    default: true   // Admin can enable / disable item permanently
+    default: true   
   },
 
-  // Kitchen Controls
+  
   kitchenAvailability: {
     type: String,
     enum: ["AVAILABLE", "OUT_OF_STOCK", "PAUSED"],
@@ -59,7 +59,7 @@ const productSchema = new mongoose.Schema(
   },
 
   kitchenNote: {
-    type: String    // "No chicken", "Oven down", "High load"
+    type: String    
   },
 
   preparationTime: {

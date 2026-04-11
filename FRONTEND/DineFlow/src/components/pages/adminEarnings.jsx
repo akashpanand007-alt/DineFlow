@@ -21,7 +21,7 @@ const AdminEarnings = () => {
   const [search, setSearch] = useState("");
   const [range, setRange] = useState("today");
   const [earnings, setEarnings] = useState([]);
-  const [kitchens, setKitchens] = useState([]); // ✅ added
+  const [kitchens, setKitchens] = useState([]); 
 
   /* ===== FETCH KITCHENS ===== */
   useEffect(() => {
@@ -53,7 +53,7 @@ const AdminEarnings = () => {
 
         const normalized = (source || []).map((e, i) => ({
   id: i,
-  kitchen: kitchens[0]?.name || "Kitchen", // only 1 kitchen now
+  kitchen: kitchens[0]?.name || "Kitchen", 
   orders: e.totalOrders || 0,
   completed: e.completedOrders ?? e.totalOrders ?? 0,
   amount: e.totalEarnings || 0,

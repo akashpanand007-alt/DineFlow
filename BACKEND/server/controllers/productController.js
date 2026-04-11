@@ -9,10 +9,10 @@ export const productList = async (req, res) => {
   try {
     const { category } = req.query;
 
-    // Build filter for products that are active
+    
     const filter = { isActive: true };
 
-    // If category is provided, filter by it
+    
     if (category) {
       filter.category = category;
     }

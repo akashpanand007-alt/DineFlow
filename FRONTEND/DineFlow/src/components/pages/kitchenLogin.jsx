@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChefHat, Lock, Mail, CheckCircle2 } from "lucide-react";
 import API from "../../api/api";
-import socket from "../../socket";   // ✅ FIX: missing import
+import socket from "../../socket";   
 
 const COLORS = {
   primary: "#FC5C02",
@@ -40,7 +40,7 @@ const KitchenLogin = () => {
       if (status === "approved") {
         const kitchen = res.data.kitchen;
 
-        socket.emit("kitchen_online", kitchen._id); // unchanged
+        socket.emit("kitchen_online", kitchen._id); 
 
         localStorage.setItem("kitchen", JSON.stringify(kitchen));
 

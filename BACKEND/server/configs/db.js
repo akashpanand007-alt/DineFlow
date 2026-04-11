@@ -8,13 +8,13 @@ const connectDB = async () => {
       throw new Error("MONGODB_URI not defined in .env");
     }
 
-    // Connect and wait until fully ready
+   
     await mongoose.connect(MONGO_URI, {
-      dbName: "StackMartDB",   // your DB name
+      dbName: "StackMartDB",   
     });
 
   } catch (error) {
-    process.exit(1); // stop server if DB fails
+    process.exit(1); 
   }
 };
 

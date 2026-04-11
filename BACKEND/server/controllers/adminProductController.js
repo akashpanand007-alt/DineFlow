@@ -47,7 +47,7 @@ export const adminAddProduct = async (req, res) => {
     }
 
     const images = (req.files || []).map((file) => ({
-      url: file.path,        // Cloudinary URL
+      url: file.path,        
       public_id: file.filename
     }));
 
@@ -63,7 +63,7 @@ export const adminAddProduct = async (req, res) => {
 
     await newProduct.save();
 
-    // 🔔 realtime emit (optional but matches frontend socket)
+  
     req.app.get("io")?.emit("product_created", newProduct);
 
     return res.status(201).json({
@@ -97,7 +97,7 @@ export const adminDeleteProduct = async (req, res) => {
       });
     }
 
-    // 🔔 realtime emit
+  
     req.app.get("io")?.emit("product_deleted", productId);
 
     return res.json({

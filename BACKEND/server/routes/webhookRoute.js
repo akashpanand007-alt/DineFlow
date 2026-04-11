@@ -3,7 +3,7 @@ import Order from "../models/Order.js";
 
 const router = express.Router();
 
-// POST /api/webhook/razorpay
+
 router.post("/razorpay", async (req, res) => {
   try {
     const event = req.body.event;
@@ -25,13 +25,13 @@ order.payment.transactionId = razorpay_payment_id;
 
 order.adminApproval.approved = true;
 order.orderStatus = "CONFIRMED";
-order.kitchenStatus = "WAITING"; // ✅ FIXED
+order.kitchenStatus = "WAITING"; 
 
 await order.save();
 
 const io = req.app.get("io");
 if (io) {
-  io.to("kitchen").emit("order_approved", order); // ✅ kitchen gets it instantly
+  io.to("kitchen").emit("order_approved", order); 
   io.to("admins").emit("order_paid_online", order);
 }
     }

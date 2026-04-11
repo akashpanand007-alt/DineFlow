@@ -2,7 +2,7 @@ import express from "express";
 import Order from "../models/Order.js";
 import Table from "../models/Table.js";
 
-// ✅ helper: keep table status in sync with order
+
 const syncTableStatus = async (tableId, orderStatus) => {
   if (!tableId) return;
 
@@ -22,11 +22,7 @@ const syncTableStatus = async (tableId, orderStatus) => {
 export default function orderRoutes(io) {
   const router = express.Router();
 
-  /**
-   * ===============================
-   * 1️⃣ Customer places an order
-   * ===============================
-   */
+  
   const createOrderHandler = async (req, res, next) => {
     try {
       const {
@@ -73,7 +69,7 @@ export default function orderRoutes(io) {
       const populatedOrder = await Order.findById(newOrder._id).populate("tableId", "number");
 
 
-      // 🔔 notify customer tracker
+      
       const email = newOrder.customerEmail?.trim().toLowerCase();
 io.emit(`customer_status_update_${email}`, populatedOrder);
 
@@ -157,7 +153,7 @@ router.post("/set-payment", async (req, res, next) => {
     const populatedOrder = await Order.findById(order._id)
       .populate("tableId", "number");
 
-    // send live order to admin + kitchen
+    
     io.to("admins").emit("new_order_alert", populatedOrder);
 
     res.json({
@@ -170,11 +166,7 @@ router.post("/set-payment", async (req, res, next) => {
   }
 });
 
-  /**
-   * ===============================
-   * 4️⃣ Admin approves order
-   * ===============================
-   */
+  
   router.post("/approve", async (req, res, next) => {
     try {
       const { orderId } = req.body;
@@ -213,9 +205,7 @@ io.emit(`customer_status_update_${email}`, populatedOrder);
     }
   });
 
-  // ===============================
-// 💳 Admin marks PAY_LATER as PAID
-// ===============================
+  
 router.patch("/mark-paid/:orderId", async (req, res, next) => {
   try {
     const { orderId } = req.params;
@@ -229,7 +219,7 @@ router.patch("/mark-paid/:orderId", async (req, res, next) => {
       });
     }
 
-    // Only update if not already paid
+    
     if (order.payment.status !== "PAID") {
       order.payment.status = "PAID";
       order.payment.paidAt = new Date();
@@ -239,7 +229,7 @@ router.patch("/mark-paid/:orderId", async (req, res, next) => {
     const populatedOrder = await Order.findById(order._id)
       .populate("tableId", "number");
 
-    // 🔔 notify admin dashboards
+    
     io.to("admins").emit("payment_updated", populatedOrder);
 
     res.json({
@@ -287,7 +277,7 @@ router.post("/payment-success", async (req, res, next) => {
 
     const populatedOrder = await Order.findById(order._id).populate("tableId", "number");
 
-    // Notify admin that a new paid order is ready
+    
     io.to("admins").emit("new_order_alert", populatedOrder);
 
     const email = order.customerEmail?.trim().toLowerCase();
@@ -372,11 +362,11 @@ io.emit(`customer_status_update_${email}`, populatedOrder);
     const populatedOrder = await Order.findById(order._id)
       .populate("tableId", "number");
 
-    // 🔔 existing emits
+    
     io.to("kitchen").emit("order_status_changed", populatedOrder);
     io.to("admins").emit("order_status_changed", populatedOrder);
 
-    // ✅🔥 ADD THIS (CRITICAL FIX)
+    
     const email = order.customerEmail?.trim().toLowerCase();
 io.emit(`customer_status_update_${email}`, populatedOrder);
 
@@ -418,7 +408,7 @@ io.emit(`customer_status_update_${email}`, populatedOrder);
       }
 
       order.kitchenStatus = "SERVED";
-order.orderStatus = "SERVED"; // 👈 NEW STATE
+order.orderStatus = "SERVED"; 
 order.servedAt = new Date();
 
       await order.save();
@@ -484,7 +474,7 @@ router.post("/complete", async (req, res, next) => {
       });
     }
 
-    // Only served orders can be completed
+    
     if (order.kitchenStatus !== "SERVED") {
       return res.status(400).json({
         success: false,

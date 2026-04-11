@@ -38,11 +38,11 @@ const VerifyOtp = () => {
     return () => clearInterval(interval);
   }, [timer]);
 
-  // 🔹 reusable OTP request
+  
   const requestOtp = async () => {
   try {
     setError("");
-    setSendingOtp(true); // 🔥 start animation
+    setSendingOtp(true); 
 
     await API.post("/otp/request", { email, orderId });
 
@@ -52,11 +52,11 @@ const VerifyOtp = () => {
   } catch (err) {
     setError("Failed to send OTP");
   } finally {
-    setSendingOtp(false); // stop loading
+    setSendingOtp(false);
   }
 };
 
-  // 🔹 send OTP automatically when page loads
+  
   
 
   const handleVerifyOtp = async () => {

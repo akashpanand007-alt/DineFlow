@@ -19,7 +19,7 @@ export const createRazorpayOrder = async (req, res) => {
     if (!order)
       return res.status(404).json({ success: false, message: "Order not found" });
 
-    // 🔐 OTP MUST BE VERIFIED
+
     if (!order.otpVerification?.verified) {
       return res.status(403).json({
         success: false,
@@ -27,7 +27,7 @@ export const createRazorpayOrder = async (req, res) => {
       });
     }
 
-    // ⛔ Prevent duplicate payments
+
     if (order.payment.status === "PAID") {
       return res.status(400).json({
         success: false,
@@ -35,7 +35,7 @@ export const createRazorpayOrder = async (req, res) => {
       });
     }
 
-    const amount = order.totalAmount * 100; // INR → paise
+    const amount = order.totalAmount * 100; 
 
     const razorpayOrder = await razorpay.orders.create({
       amount,
@@ -43,7 +43,7 @@ export const createRazorpayOrder = async (req, res) => {
       receipt: `order_${order._id}`
     });
 
-    // 💾 Store Razorpay order id
+
     order.payment.transactionId = razorpayOrder.id;
     await order.save();
 
@@ -78,7 +78,7 @@ export const verifyRazorpayPayment = async (req, res) => {
     if (!order)
       return res.status(404).json({ success: false, message: "Order not found" });
 
-    // prevent duplicate verification
+
     if (order.payment.status === "PAID") {
       return res.json({ success: true, order });
     }
@@ -102,7 +102,7 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // ✅ ONLINE → DIRECT TO KITCHEN
+    
    order.payment.method = "PAY_ONLINE";
 order.payment.status = "PAID";
 order.payment.paidAt = new Date();
@@ -110,13 +110,13 @@ order.payment.transactionId = razorpay_payment_id;
 
 order.adminApproval.approved = true;
 order.orderStatus = "CONFIRMED";
-order.kitchenStatus = "WAITING"; // ✅ FIXED
+order.kitchenStatus = "WAITING"; 
 
 await order.save();
 
 const io = req.app.get("io");
 if (io) {
-  io.to("kitchen").emit("order_approved", order); // ✅ kitchen gets it instantly
+  io.to("kitchen").emit("order_approved", order); 
   io.to("admins").emit("order_paid_online", order);
 }
 

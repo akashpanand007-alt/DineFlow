@@ -12,7 +12,7 @@ export const sendOtpEmail = async ({ to, otp, expiresInMinutes = 5 }) => {
 
   try {
     const response = await resend.emails.send({
-      from: "onboarding@resend.dev", // temporary sender
+      from: "no-reply@dineflow.com", 
       to,
       subject: "OTP Verification",
       html: `
@@ -22,10 +22,9 @@ export const sendOtpEmail = async ({ to, otp, expiresInMinutes = 5 }) => {
       `
     });
 
-    console.log("✅ Email sent:", response.id);
+
 
   } catch (error) {
-    console.error("❌ Resend Email Error:", error);
     throw error;
   }
 };
