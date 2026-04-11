@@ -87,7 +87,6 @@ export const requestPasswordResetOtp = async (req, res) => {
     }
 
     const otpCode = crypto.randomInt(100000, 999999).toString();
-
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     await Otp.findOneAndUpdate(
@@ -97,15 +96,17 @@ export const requestPasswordResetOtp = async (req, res) => {
         otp: otpCode,
         expiresAt,
         purpose: "password_reset",
-        attempts: 0
+        attempts: 0,
+        lastSentAt: new Date()
       },
       { upsert: true, new: true }
     );
 
-    sendOtpEmail({
-  to: email,
-  otp: otpCode
-})
+    
+    await sendOtpEmail({
+      to: email,
+      otp: otpCode
+    });
 
     res.json({
       success: true,
@@ -113,6 +114,7 @@ export const requestPasswordResetOtp = async (req, res) => {
     });
 
   } catch (error) {
+    
     res.status(500).json({
       success: false,
       message: "Failed to send OTP"
