@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom"; // ✅ ADD THIS
 import API from "../api/api";
 
 const AdminAuthContext = createContext();
@@ -6,6 +7,7 @@ const AdminAuthContext = createContext();
 export const AdminAuthProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
+  const location = useLocation(); // ✅ ADD
 
   const checkAuth = async () => {
     try {
@@ -19,8 +21,19 @@ export const AdminAuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    const publicRoutes = [
+      "/admin/login",
+      "/admin/forgot-password"
+    ];
+
+    if (publicRoutes.includes(location.pathname)) {
+      setLoading(false); // 🔥 IMPORTANT
+      return;
+    }
+
     checkAuth();
-  }, []);
+
+  }, [location.pathname]); // ✅ track route change
 
   const logout = async () => {
     await API.post("/admin/logout");
