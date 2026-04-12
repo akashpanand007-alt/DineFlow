@@ -40,7 +40,6 @@ const port = process.env.PORT||4000;
 const server = http.createServer(app);
 
 // Allowed frontend origin
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN
 
 // Socket.IO setup
 const io = new Server(server, {
@@ -69,25 +68,6 @@ const allowedOrigins = [
   process.env.CLIENT_ORIGIN_ALTERNATE,
 ].filter(Boolean);
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // allow server-to-server / Postman / no-origin requests
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-
-
-      return callback(null, false);
-    },
-    credentials: true,
-  })
-);
-
-
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
@@ -96,14 +76,13 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    
-    return callback(null, false);
+    console.log("Blocked by CORS:", origin);
+    return callback(new Error("CORS not allowed"));
   },
   credentials: true,
 };
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); 
+app.use(cors(corsOptions)); // ✅ ONLY THIS
 
 // Webhooks 
 app.use("/api/webhook", webhookRoutes);
