@@ -7,12 +7,14 @@ export const sendOtpEmail = async ({ to, otp, expiresInMinutes = 5 }) => {
 
   try {
     const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,       // your gmail
-        pass: process.env.EMAIL_PASS        // app password (NOT normal password)
-      }
-    });
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // ✅ IMPORTANT
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
     const info = await transporter.sendMail({
       from: `"DineFlow" <${process.env.EMAIL_USER}>`,
