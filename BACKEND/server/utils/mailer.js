@@ -1,39 +1,36 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendOtpEmail = async ({ to, otp, expiresInMinutes = 5 }) => {
   if (!to) {
     throw new Error("Recipient email missing");
   }
 
-  try {
-    const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error("Missing RESEND_API_KEY");
   }
-});
 
-    const info = await transporter.sendMail({
-      from: `"DineFlow" <${process.env.EMAIL_USER}>`,
+  try {
+    const response = await resend.emails.send({
+      from: "DineFlow <no-reply@dine-flow.in>",
       to,
-      subject: "OTP Verification",
+      subject: "Your OTP Code - DineFlow",
       html: `
-        <h2>Your OTP Code</h2>
-        <p><strong>${otp}</strong></p>
-        <p>This OTP is valid for ${expiresInMinutes} minutes.</p>
-      `
+        <div style="font-family: Arial; padding: 20px;">
+          <h2>DineFlow OTP Verification</h2>
+          <p>Your OTP code is:</p>
+          <h1 style="letter-spacing: 6px; color: #333;">${otp}</h1>
+          <p>This OTP is valid for ${expiresInMinutes} minutes.</p>
+          <p style="color: #888;">If you didn’t request this, ignore this email.</p>
+        </div>
+      `,
     });
 
-    console.log("EMAIL SENT:", info.messageId);
+
+    return response;
 
   } catch (error) {
-    console.error("EMAIL ERROR:", error);
-    throw error;
+    throw new Error("Failed to send OTP email");
   }
 };

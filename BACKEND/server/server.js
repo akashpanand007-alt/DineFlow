@@ -46,8 +46,8 @@ const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN
 const io = new Server(server, {
   cors: {
     origin: [
-      "http://localhost:5173",
-      "https://dine-flow-one.vercel.app",
+      process.env.CLIENT_ORIGIN,
+      process.env.CLIENT_ORIGIN_ALTERNATE,
     ],
     credentials: true,
   },
@@ -65,22 +65,45 @@ await connectCloudinary();
 
 // CORS
 const allowedOrigins = [
-  "http://localhost:5173",
-  "https://dine-flow-one.vercel.app",
-];
+  process.env.CLIENT_ORIGIN,
+  process.env.CLIENT_ORIGIN_ALTERNATE,
+].filter(Boolean);
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+    origin: function (origin, callback) {
+      // allow server-to-server / Postman / no-origin requests
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
+
+
+
+      return callback(null, false);
     },
     credentials: true,
   })
 );
+
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    
+    return callback(null, false);
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); 
 
 // Webhooks 
 app.use("/api/webhook", webhookRoutes);
@@ -114,6 +137,13 @@ app.use("/api/otp", otpRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
+  if (err.message === "CORS not allowed") {
+    return res.status(403).json({
+      success: false,
+      message: "CORS blocked",
+    });
+  }
+
   res.status(err.status || 500).json({
     success: false,
     message: err.message,
