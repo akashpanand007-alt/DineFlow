@@ -102,22 +102,26 @@ export const requestPasswordResetOtp = async (req, res) => {
       { upsert: true, new: true }
     );
 
-    
-    await sendOtpEmail({
-      to: email,
-      otp: otpCode
-    });
+    // 🔥 DO NOT BLOCK API
+    try {
+      await sendOtpEmail({
+        to: email,
+        otp: otpCode
+      });
+    } catch (err) {
+      console.error("EMAIL FAILED:", err.message);
+    }
 
     res.json({
       success: true,
-      message: "OTP sent for password reset"
+      message: "OTP generated successfully"
     });
 
   } catch (error) {
-    
+    console.error("OTP ERROR:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to send OTP"
+      message: "Failed to generate OTP"
     });
   }
 };
