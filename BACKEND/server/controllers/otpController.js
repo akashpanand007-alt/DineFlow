@@ -109,6 +109,10 @@ export const requestPasswordResetOtp = async (req, res) => {
     otp: otpCode
   });
 } catch (err) {
+  return res.status(500).json({
+    success: false,
+    message: "Failed to send email"
+  });
 }
 
     res.json({
@@ -162,7 +166,18 @@ export const verifyPasswordResetOtp = async (req, res) => {
 
 
 
-    const Model = role === "admin" ? Admin : Kitchen;
+    let Model;
+
+if (role === "admin") {
+  Model = Admin;
+} else if (role === "kitchen") {
+  Model = Kitchen;
+} else {
+  return res.status(400).json({
+    success: false,
+    message: "Invalid role"
+  });
+}
 
     const user = await Model.findOne({ email }).select("+password");
 

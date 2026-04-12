@@ -50,6 +50,7 @@ const io = new Server(server, {
     ],
     credentials: true,
   },
+  transports: ["websocket"],   
 });
 
 
@@ -82,7 +83,7 @@ const corsOptions = {
   credentials: true,
 };
 
-app.use(cors(corsOptions)); // ✅ ONLY THIS
+app.use(cors(corsOptions)); 
 
 // Webhooks 
 app.use("/api/webhook", webhookRoutes);

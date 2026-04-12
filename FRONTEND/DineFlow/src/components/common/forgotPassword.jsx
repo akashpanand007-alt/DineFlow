@@ -51,7 +51,7 @@ const ForgotPassword = ({ role }) => {
         email: form.email,
         otp: form.otp,
         newPassword: form.newPassword,
-        role,
+        role:"admin"
       });
 
       toast.success("Password reset successful");
