@@ -1,18 +1,21 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-/**
- * Send OTP email using Resend
- */
 export const sendOtpEmail = async ({ to, otp, expiresInMinutes = 5 }) => {
   if (!to) {
     throw new Error("Recipient email missing");
   }
 
   try {
-    const response = await resend.emails.send({
-      from: "onboarding@resend.dev", 
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,       // your gmail
+        pass: process.env.EMAIL_PASS        // app password (NOT normal password)
+      }
+    });
+
+    const info = await transporter.sendMail({
+      from: `"DineFlow" <${process.env.EMAIL_USER}>`,
       to,
       subject: "OTP Verification",
       html: `
@@ -22,9 +25,10 @@ export const sendOtpEmail = async ({ to, otp, expiresInMinutes = 5 }) => {
       `
     });
 
-
+    console.log("EMAIL SENT:", info.messageId);
 
   } catch (error) {
+    console.error("EMAIL ERROR:", error);
     throw error;
   }
 };
