@@ -121,7 +121,7 @@ const CartPage = () => {
           Your Cart is Empty
         </h2>
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate(`/order?tableId=${tableId}`)}
           className="mt-5 bg-[#FC5C02] text-white px-8 py-3 rounded-xl font-bold cursor-pointer"
         >
           Browse Menu

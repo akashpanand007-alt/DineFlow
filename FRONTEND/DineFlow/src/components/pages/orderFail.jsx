@@ -48,7 +48,7 @@ const OrderFailed = () => {
         </button>
 
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate(`/order?tableId=${tableId}`)}
           className="bg-white text-[#312B1E] px-6 py-3 rounded-xl font-bold cursor-pointer"
         >
           Go Home
