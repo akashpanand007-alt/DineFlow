@@ -144,8 +144,47 @@ export default function MenuPage() {
   }, 0);
 
   if (loading) {
-    return <div className="p-10 text-center text-lg">Loading menu...</div>;
-  }
+  return (
+    <div className="min-h-screen bg-[#E2CEAE] animate-pulse">
+      
+      {/* HEADER SKELETON */}
+      <div className="bg-[#312B1E] p-5 space-y-4">
+        <div className="h-5 w-32 bg-[#7C6B51] rounded"></div>
+        <div className="h-10 w-full bg-[#7C6B51] rounded-lg"></div>
+      </div>
+
+      {/* CATEGORY SKELETON */}
+      <div className="flex gap-3 px-5 py-4 overflow-x-auto">
+        {[1,2,3,4,5].map((i) => (
+          <div
+            key={i}
+            className="h-8 w-20 bg-[#7C6B51] rounded-full flex-shrink-0"
+          />
+        ))}
+      </div>
+
+      {/* GRID SKELETON */}
+      <div className="grid gap-5 px-5 pb-10 sm:grid-cols-2 lg:grid-cols-3">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="bg-white rounded-xl p-4 space-y-4 shadow"
+          >
+            <div className="h-32 bg-gray-300 rounded-lg"></div>
+
+            <div className="h-4 w-3/4 bg-gray-300 rounded"></div>
+            <div className="h-3 w-1/2 bg-gray-300 rounded"></div>
+
+            <div className="flex justify-between items-center mt-3">
+              <div className="h-4 w-16 bg-gray-300 rounded"></div>
+              <div className="h-8 w-20 bg-gray-300 rounded-lg"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-[#E2CEAE] pb-24 font-sans">
