@@ -1,14 +1,14 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { ShoppingCart, Search, ChevronRight } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import MenuCard from "../common/menuCard";
 import API from "../../api/api";
+import { normalizeProductList } from "../../utils/normalizeProduct";
 
 export default function MenuPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  
   const tableId =
     location.state?.tableId ||
     new URLSearchParams(location.search).get("tableId");
@@ -24,49 +24,29 @@ export default function MenuPage() {
 
   const [activeOrder, setActiveOrder] = useState(null);
 
-  
- useEffect(() => {
-  if (!tableId) return;
+  // Fetch Table Info
+  useEffect(() => {
+    if (!tableId) return;
 
-  API.get(`/admin/tables/${tableId}`)
-    .then((res) => {
-      const table = res.data?.table || res.data;
-      if (table?.number) setTableName(table.number);
-    })
-    .catch((err) => {
-    });
-}, [tableId]);
+    API.get(`/admin/tables/${tableId}`)
+      .then((res) => {
+        const table = res.data?.table || res.data;
+        if (table?.number) setTableName(table.number);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch table details:", err);
+      });
+  }, [tableId]);
 
- 
+  // Fetch Products
   useEffect(() => {
     API.get("/product/list")
       .then((res) => {
-        const list =
-          Array.isArray(res.data)
-            ? res.data
-            : res.data.products || res.data.data || [];
+        const list = Array.isArray(res.data)
+          ? res.data
+          : res.data.products || res.data.data || [];
 
-        const normalized = list.map((p) => ({
-          id: p._id,
-          name: p.name,
-          price: p.basePrice,
-          category: p.category,
-          desc: p.description,
-          type: p.dietType === "NON_VEG" ? "non-veg" : "veg",
-          images: (p.images || []).map((img) => {
-            const raw =
-              typeof img === "string"
-                ? img
-                : img?.url || img?.path || img?.src || "";
-
-            if (!raw) return "";
-
-            return raw.startsWith("http")
-              ? raw
-              : `${baseURL}/${raw.replace(/^\/+/, "")}`;
-          }),
-        }));
-
+        const normalized = normalizeProductList(list);
         setItems(normalized);
 
         const backendCats = [
@@ -78,11 +58,12 @@ export default function MenuPage() {
         setCategories(backendCats);
       })
       .catch((err) => {
+        console.error("Failed to fetch products:", err);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  
+  // Fetch Active Order for Table
   useEffect(() => {
     if (!tableId) return;
 
@@ -91,26 +72,27 @@ export default function MenuPage() {
         const orders = res.data?.orders || [];
 
         const latest = orders.find((o) => {
-  const orderTableId =
-    typeof o.tableId === "object" ? o.tableId._id : o.tableId;
+          const orderTableId =
+            typeof o.tableId === "object" ? o.tableId._id : o.tableId;
 
-  return (
-    String(orderTableId) === String(tableId) &&
-    !["COMPLETED", "CANCELLED", "REJECTED"].includes(o.orderStatus)
-  );
-});
+          return (
+            String(orderTableId) === String(tableId) &&
+            !["COMPLETED", "CANCELLED", "REJECTED"].includes(o.orderStatus)
+          );
+        });
 
         if (latest) setActiveOrder(latest);
       })
       .catch((err) => {
+        console.error("Failed to fetch active orders:", err);
       });
   }, [tableId]);
 
-  const handleAdd = (id) => {
+  const handleAdd = useCallback((id) => {
     setCart((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-  };
+  }, []);
 
-  const handleRemove = (id) => {
+  const handleRemove = useCallback((id) => {
     setCart((prev) => {
       const qty = (prev[id] || 0) - 1;
       if (qty <= 0) {
@@ -120,71 +102,77 @@ export default function MenuPage() {
       }
       return { ...prev, [id]: qty };
     });
-  };
+  }, []);
 
   const filteredItems = useMemo(() => {
+    const searchLower = search.toLowerCase();
+    const catLower = activeCategory.toLowerCase();
+
     return items.filter((item) => {
       const matchCategory =
         activeCategory === "All" ||
-        item.category?.toLowerCase() === activeCategory.toLowerCase();
+        item.category?.toLowerCase() === catLower;
 
       const matchSearch = item.name
         ?.toLowerCase()
-        .includes(search.toLowerCase());
+        .includes(searchLower);
 
       return matchCategory && matchSearch;
     });
   }, [items, activeCategory, search]);
 
-  const totalItems = Object.values(cart).reduce((a, b) => a + b, 0);
+  const totalItems = useMemo(() => {
+    return Object.values(cart).reduce((a, b) => a + b, 0);
+  }, [cart]);
 
-  const totalPrice = Object.keys(cart).reduce((total, id) => {
-    const item = items.find((i) => i.id === id);
-    return total + (item?.price || 0) * cart[id];
-  }, 0);
+  const totalPrice = useMemo(() => {
+    return Object.keys(cart).reduce((total, id) => {
+      const item = items.find((i) => i.id === id);
+      return total + (item?.price || 0) * cart[id];
+    }, 0);
+  }, [cart, items]);
 
   if (loading) {
-  return (
-    <div className="min-h-screen bg-[#E2CEAE] animate-pulse">
-      
-      {/* HEADER SKELETON */}
-      <div className="bg-[#312B1E] p-5 space-y-4">
-        <div className="h-5 w-32 bg-[#7C6B51] rounded"></div>
-        <div className="h-10 w-full bg-[#7C6B51] rounded-lg"></div>
-      </div>
+    return (
+      <div className="min-h-screen bg-[#E2CEAE] animate-pulse">
+        {/* HEADER SKELETON */}
+        <div className="bg-[#312B1E] p-5 space-y-4">
+          <div className="h-5 w-32 bg-[#7C6B51] rounded"></div>
+          <div className="h-10 w-full bg-[#7C6B51] rounded-lg"></div>
+        </div>
 
-      {/* CATEGORY SKELETON */}
-      <div className="flex gap-3 px-5 py-4 overflow-x-auto">
-        {[1,2,3,4,5].map((i) => (
-          <div
-            key={i}
-            className="h-8 w-20 bg-[#7C6B51] rounded-full flex-shrink-0"
-          />
-        ))}
-      </div>
+        {/* CATEGORY SKELETON */}
+        <div className="flex gap-3 px-5 py-4 overflow-x-auto">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="h-8 w-20 bg-[#7C6B51] rounded-full flex-shrink-0"
+            />
+          ))}
+        </div>
 
-      {/* GRID SKELETON */}
-      <div className="grid gap-5 px-5 pb-10 sm:grid-cols-2 lg:grid-cols-3">
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="bg-white rounded-xl p-4 space-y-4 shadow"
-          >
-            <div className="h-32 bg-gray-300 rounded-lg"></div>
+        {/* GRID SKELETON */}
+        <div className="grid gap-5 px-5 pb-10 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-xl p-4 space-y-4 shadow"
+            >
+              <div className="h-32 bg-gray-300 rounded-lg"></div>
 
-            <div className="h-4 w-3/4 bg-gray-300 rounded"></div>
-            <div className="h-3 w-1/2 bg-gray-300 rounded"></div>
+              <div className="h-4 w-3/4 bg-gray-300 rounded"></div>
+              <div className="h-3 w-1/2 bg-gray-300 rounded"></div>
 
-            <div className="flex justify-between items-center mt-3">
-              <div className="h-4 w-16 bg-gray-300 rounded"></div>
-              <div className="h-8 w-20 bg-gray-300 rounded-lg"></div>
+              <div className="flex justify-between items-center mt-3">
+                <div className="h-4 w-16 bg-gray-300 rounded"></div>
+                <div className="h-8 w-20 bg-gray-300 rounded-lg"></div>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#E2CEAE] pb-24 font-sans">
@@ -213,7 +201,7 @@ export default function MenuPage() {
             >
               <ShoppingCart className="cursor-pointer text-white" />
               {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-[#FC5C02] text-white text-[10px] w-[18px] h-[18px] rounded-full flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 bg-[#FC5C02] text-white text-[10px] w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold">
                   {totalItems}
                 </span>
               )}
@@ -229,11 +217,11 @@ export default function MenuPage() {
             placeholder="Search for dishes..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg bg-[#F9F5F0] px-10 py-3 text-[#312B1E] outline-none"
+            className="w-full rounded-lg bg-[#F9F5F0] px-10 py-3 text-[#312B1E] outline-none focus:ring-2 focus:ring-[#FC5C02]"
           />
         </div>
       </header>
-      
+
       {/* CATEGORIES */}
       <div className="flex gap-3 overflow-x-auto px-5 py-4">
         {categories.map((cat) => (
@@ -265,7 +253,7 @@ export default function MenuPage() {
         ))}
       </div>
 
-      {/* ✅ STICKY TRACK ORDER BAR */}
+      {/* STICKY TRACK ORDER BAR */}
       {activeOrder && (
         <div
           onClick={() =>
@@ -279,7 +267,7 @@ export default function MenuPage() {
           className="fixed bottom-[90px] left-1/2 -translate-x-1/2 w-[92%] max-w-md 
                      bg-gradient-to-r from-[#FC5C02] to-[#ff7a2f]
                      text-white rounded-2xl px-5 py-4 shadow-2xl 
-                     flex items-center justify-between cursor-pointer"
+                     flex items-center justify-between cursor-pointer hover:opacity-95 transition-opacity"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -309,7 +297,7 @@ export default function MenuPage() {
       {/* FLOATING CART */}
       {totalItems > 0 && (
         <div
-          className="fixed bottom-5 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-[#312B1E] text-white rounded-xl px-5 py-4 shadow-2xl flex items-center justify-between cursor-pointer"
+          className="fixed bottom-5 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-[#312B1E] text-white rounded-xl px-5 py-4 shadow-2xl flex items-center justify-between cursor-pointer hover:bg-[#3d3626] transition-colors"
           onClick={() =>
             navigate("/cart", {
               state: { cart, items, totalItems, totalPrice, tableId },
@@ -327,7 +315,7 @@ export default function MenuPage() {
       )}
 
       {filteredItems.length === 0 && (
-        <div className="col-span-full text-center text-[#312B1E] items-center">
+        <div className="col-span-full text-center text-[#312B1E] py-10">
           No products found
         </div>
       )}

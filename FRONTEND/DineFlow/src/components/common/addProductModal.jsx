@@ -1,14 +1,11 @@
 import React, { useState, useRef } from "react";
 import { X, ImagePlus } from "lucide-react";
 import API from "../../api/api";
-
-const COLORS = {
-  primary: "#FC5C02",
-  text: "#312B1E",
-};
+import { Input, Textarea } from "./FormInputs";
+import { COLORS } from "../../constants/theme";
 
 const AddProductModal = ({ open, onClose, onCreated }) => {
-  const fileRef = useRef(null); 
+  const fileRef = useRef(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -16,14 +13,14 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
     category: "",
     price: "",
     dietType: "VEG",
-    prepTime: "",
     active: true,
     images: [],
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   if (!open) return null;
 
-  
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files || []);
     setForm((prev) => ({
@@ -36,11 +33,17 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
     fileRef.current?.click();
   };
 
-  
   const handleSave = async () => {
-    try {
-      const formData = new FormData();
+    if (!form.name || !form.price || !form.category) {
+      setError("Please fill out required fields (Name, Price, Category)");
+      return;
+    }
 
+    try {
+      setLoading(true);
+      setError("");
+
+      const formData = new FormData();
       formData.append("name", form.name);
       formData.append("description", form.description);
       formData.append("category", form.category);
@@ -65,7 +68,7 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
       if (newProduct && onCreated) {
         onCreated({
           ...newProduct,
-          price: newProduct.basePrice,
+          price: newProduct.basePrice ?? newProduct.price ?? form.price,
         });
       }
 
@@ -77,11 +80,14 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
         category: "",
         price: "",
         dietType: "VEG",
-        prepTime: "",
         active: true,
         images: [],
       });
     } catch (e) {
+      console.error("Failed to add product:", e);
+      setError(e.response?.data?.message || "Failed to create product");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -92,14 +98,20 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
           <h2 className="text-lg sm:text-xl font-bold text-[#312B1E]">
             Add New Product
           </h2>
-          <button onClick={onClose}>
+          <button onClick={onClose} className="cursor-pointer">
             <X size={20} />
           </button>
         </div>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-4 sm:space-y-5">
           <Input
-            label="Product Name"
+            label="Product Name *"
             value={form.name}
             onChange={(e) =>
               setForm({ ...form, name: e.target.value })
@@ -118,7 +130,7 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
           />
 
           <Input
-            label="Category"
+            label="Category *"
             value={form.category}
             onChange={(e) =>
               setForm({
@@ -129,7 +141,7 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
           />
 
           <Input
-            label="Base Price"
+            label="Base Price *"
             type="number"
             value={form.price}
             onChange={(e) =>
@@ -140,42 +152,42 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
             }
           />
 
-          {/* ✅ DIET TYPE */}
-<div>
-  <label className="text-sm font-semibold text-[#312B1E]">
-    Diet Type
-  </label>
+          {/* DIET TYPE */}
+          <div>
+            <label className="text-sm font-semibold text-[#312B1E]">
+              Diet Type
+            </label>
 
-  <div className="flex gap-4 mt-2">
-    <label className="flex items-center gap-2">
-      <input
-        type="radio"
-        name="dietType"
-        value="VEG"
-        checked={form.dietType === "VEG"}
-        onChange={(e) =>
-          setForm({ ...form, dietType: e.target.value })
-        }
-      />
-      Veg
-    </label>
+            <div className="flex gap-4 mt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="dietType"
+                  value="VEG"
+                  checked={form.dietType === "VEG"}
+                  onChange={(e) =>
+                    setForm({ ...form, dietType: e.target.value })
+                  }
+                />
+                Veg
+              </label>
 
-    <label className="flex items-center gap-2">
-      <input
-        type="radio"
-        name="dietType"
-        value="NON_VEG"
-        checked={form.dietType === "NON_VEG"}
-        onChange={(e) =>
-          setForm({ ...form, dietType: e.target.value })
-        }
-      />
-      Non-Veg
-    </label>
-  </div>
-</div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="dietType"
+                  value="NON_VEG"
+                  checked={form.dietType === "NON_VEG"}
+                  onChange={(e) =>
+                    setForm({ ...form, dietType: e.target.value })
+                  }
+                />
+                Non-Veg
+              </label>
+            </div>
+          </div>
 
-          {/* ✅ CLICKABLE CLOUD-STYLE IMAGE UPLOAD */}
+          {/* CLICKABLE IMAGE UPLOAD */}
           <div>
             <label className="text-sm font-semibold text-[#312B1E]">
               Product Images
@@ -194,13 +206,12 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
               </p>
 
               {form.images?.length > 0 && (
-                <p className="text-xs text-[#7C6B51] mt-1">
+                <p className="text-xs text-[#7C6B51] mt-1 font-semibold text-[#FC5C02]">
                   {form.images.length} image(s) selected
                 </p>
               )}
             </div>
 
-            {/* hidden input */}
             <input
               ref={fileRef}
               type="file"
@@ -214,6 +225,7 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
+              id="activeProduct"
               checked={form.active}
               onChange={(e) =>
                 setForm({
@@ -221,26 +233,28 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
                   active: e.target.checked,
                 })
               }
+              className="cursor-pointer"
             />
-            <span className="text-sm text-[#312B1E]">
+            <label htmlFor="activeProduct" className="text-sm text-[#312B1E] cursor-pointer">
               Active Product
-            </span>
+            </label>
           </div>
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 mt-6 sm:mt-8">
           <button
             onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2 rounded-lg bg-gray-200 text-[#312B1E] font-semibold"
+            className="w-full sm:w-auto px-4 py-2 rounded-lg bg-gray-200 text-[#312B1E] font-semibold cursor-pointer hover:bg-gray-300"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="w-full sm:w-auto px-5 py-2 rounded-lg text-white font-semibold"
+            disabled={loading}
+            className="w-full sm:w-auto px-5 py-2 rounded-lg text-white font-semibold cursor-pointer hover:opacity-90 disabled:opacity-60"
             style={{ backgroundColor: COLORS.primary }}
           >
-            Save Product
+            {loading ? "Saving..." : "Save Product"}
           </button>
         </div>
       </div>
@@ -248,30 +262,4 @@ const AddProductModal = ({ open, onClose, onCreated }) => {
   );
 };
 
-const Input = ({ label, ...props }) => (
-  <div>
-    <label className="text-sm font-semibold text-[#312B1E]">
-      {label}
-    </label>
-    <input
-      {...props}
-      className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"
-    />
-  </div>
-);
-
-const Textarea = ({ label, ...props }) => (
-  <div>
-    <label className="text-sm font-semibold text-[#312B1E]">
-      {label}
-    </label>
-    <textarea
-      rows={3}
-      {...props}
-      className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"
-    />
-  </div>
-);
-
 export default AddProductModal;
-

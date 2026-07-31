@@ -10,7 +10,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://dineflow-962v.onrender.com ",
+        target: "https://dineflow-962v.onrender.com",
         changeOrigin: true,
         secure: false,
       },

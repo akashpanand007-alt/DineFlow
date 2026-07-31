@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   ClipboardList,
   Search,
-  CheckCircle2,
-  Clock,
-  XCircle,
   IndianRupee,
   Menu,
   Inbox,
@@ -12,14 +9,9 @@ import {
 import API from "../../api/api";
 import AdminSidebar from "../common/adminSideBar";
 import socket from "../../socket";
-
-
-const COLORS = {
-  primary: "#FC5C02",
-  bg: "#E2CEAE",
-  text: "#312B1E",
-  muted: "#7C6B51",
-};
+import StatusBadge from "../common/StatusBadge";
+import { COLORS } from "../../constants/theme";
+import { formatOrder } from "../../utils/formatOrder";
 
 const AdminOrders = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -28,46 +20,14 @@ const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  
-  const mapStatus = (status, kitchenStatus) => {
-    const s = (status || "").toUpperCase();
-    const ks = (kitchenStatus || "").toUpperCase();
-
-    
-if (s === "COMPLETED") return "completed";
-
-if (ks === "SERVED") return "served";
-if (ks === "READY") return "ready";
-    if (s === "CANCELLED") return "cancelled";
-    if (s === "REJECTED") return "rejected";
-
-    if (s === "CONFIRMED") return "live";
-
-    if (s === "OTP_PENDING" || s === "OTP_VERIFIED") return "pending";
-
-    return "pending";
-  };
-
-  const formatOrder = (o) => ({
-  id: o._id,
-  customer: o.customerName || "N/A",
-  table: o.tableId?.number || o.table || "—",
-  amount: o.totalAmount || o.amount || 0,
-  status: mapStatus(o.orderStatus, o.kitchenStatus),
-  rawStatus: o.orderStatus,
-  kitchenStatus: o.kitchenStatus,
-  paymentMethod: o.payment?.method || "—",
-  paymentStatus: o.payment?.status || "PENDING", 
-  date: new Date(o.createdAt).toLocaleDateString(),
-});
-
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         const res = await API.get("/orders");
-        const mapped = (res.data?.orders || []).map(formatOrder);
+        const mapped = (res.data?.orders || []).map(formatOrder).filter(Boolean);
         setOrders(mapped);
       } catch (err) {
+        console.error("Failed to fetch orders:", err);
       } finally {
         setLoading(false);
       }
@@ -80,6 +40,8 @@ if (ks === "READY") return "ready";
 
     const updateOrAddOrder = (o) => {
       const formatted = formatOrder(o);
+      if (!formatted) return;
+
       setOrders((prev) => {
         const exists = prev.some((ord) => ord.id === formatted.id);
         if (exists) {
@@ -98,15 +60,15 @@ if (ks === "READY") return "ready";
     socket.on("payment_updated", updateOrAddOrder);
 
     return () => {
-      socket.off("new_order_alert");
-      socket.off("order_approved_admin");
-      socket.off("order_rejected_admin");
-      socket.off("order_status_changed");
-      socket.off("payment_updated");
+      socket.off("new_order_alert", updateOrAddOrder);
+      socket.off("order_approved_admin", updateOrAddOrder);
+      socket.off("order_rejected_admin", updateOrAddOrder);
+      socket.off("order_status_changed", updateOrAddOrder);
+      socket.off("payment_updated", updateOrAddOrder);
     };
   }, []);
 
-  const handleApprove = async (id) => {
+  const handleApprove = useCallback(async (id) => {
     setOrders((prev) =>
       prev.map((ord) =>
         ord.id === id
@@ -117,10 +79,11 @@ if (ks === "READY") return "ready";
     try {
       await API.post("/orders/approve", { orderId: id });
     } catch (e) {
+      console.error("Failed to approve order:", e);
     }
-  };
+  }, []);
 
-  const handleReject = async (id) => {
+  const handleReject = useCallback(async (id) => {
     setOrders((prev) =>
       prev.map((ord) =>
         ord.id === id
@@ -131,109 +94,89 @@ if (ks === "READY") return "ready";
     try {
       await API.post("/orders/reject", { orderId: id });
     } catch (e) {
+      console.error("Failed to reject order:", e);
     }
-  };
+  }, []);
 
-  const handleServe = async (id) => {
-  setOrders((prev) =>
-    prev.map((ord) =>
-      ord.id === id
-        ? {
-            ...ord,
-            status: "served",
-            kitchenStatus: "SERVED",
-            rawStatus: "SERVED" 
-          }
-        : ord
-    )
-  );
-
-  try {
-    await API.post("/orders/serve", { orderId: id });
-  } catch (e) {
-  }
-};
-
-  const handleMarkAsPaid = async (id) => {
-  try {
-    await API.patch(`/orders/mark-paid/${id}`);
-
-    setOrders((prev) =>
-      prev.map((ord) =>
-        ord.id === id
-          ? { ...ord, paymentStatus: "PAID" }
-          : ord
-      )
-    );
-  } catch (e) {
-  }
-};
-
-const handleComplete = async (id) => {
-  try {
-    await API.post("/orders/complete", { orderId: id });
-
+  const handleServe = useCallback(async (id) => {
     setOrders((prev) =>
       prev.map((ord) =>
         ord.id === id
           ? {
               ...ord,
-              status: "completed",
-              rawStatus: "COMPLETED",
-              kitchenStatus: "SERVED" 
+              status: "served",
+              kitchenStatus: "SERVED",
+              rawStatus: "SERVED",
             }
           : ord
       )
     );
-  } catch (e) {
-  }
-};
 
-const UnpaidRow = ({ order, onMarkPaid }) => {
-  return (
-    <div className="flex justify-between items-center bg-red-50 border border-red-200 rounded-xl p-3">
-      <div>
-        <p className="font-semibold">
-          #{order.id?.toString().slice(-6) || "------"} - {order.customer}
-        </p>
-        <p className="text-xs text-gray-500">
-          Table: {order.table} | ₹{order.amount}
-        </p>
-      </div>
+    try {
+      await API.post("/orders/serve", { orderId: id });
+    } catch (e) {
+      console.error("Failed to serve order:", e);
+    }
+  }, []);
 
-      {!["CANCELLED", "REJECTED"].includes(order.rawStatus) && (
-  <button
-    onClick={() => onMarkPaid(order.id)}
-    className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg"
-  >
-    Mark Paid
-  </button>
-)}
-    </div>
-  );
-};
+  const handleMarkAsPaid = useCallback(async (id) => {
+    try {
+      await API.patch(`/orders/mark-paid/${id}`);
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesStatus =
-      activeFilter === "all" || order.status === activeFilter;
+      setOrders((prev) =>
+        prev.map((ord) =>
+          ord.id === id ? { ...ord, paymentStatus: "PAID" } : ord
+        )
+      );
+    } catch (e) {
+      console.error("Failed to mark order as paid:", e);
+    }
+  }, []);
 
-    const matchesSearch =
-      order.id?.toLowerCase().includes(search.toLowerCase()) ||
-      order.customer?.toLowerCase().includes(search.toLowerCase());
+  const handleComplete = useCallback(async (id) => {
+    try {
+      await API.post("/orders/complete", { orderId: id });
 
-    return matchesStatus && matchesSearch;
-  });
+      setOrders((prev) =>
+        prev.map((ord) =>
+          ord.id === id
+            ? {
+                ...ord,
+                status: "completed",
+                rawStatus: "COMPLETED",
+                kitchenStatus: "SERVED",
+              }
+            : ord
+        )
+      );
+    } catch (e) {
+      console.error("Failed to complete order:", e);
+    }
+  }, []);
 
+  const filteredOrders = useMemo(() => {
+    const searchLower = search.toLowerCase();
 
-  const unpaidOrders = filteredOrders.filter(
-  (o) =>
-    o.paymentStatus !== "PAID" &&
-    !["CANCELLED", "REJECTED"].includes(o.rawStatus)
-);
+    return orders.filter((order) => {
+      const matchesStatus =
+        activeFilter === "all" || order.status === activeFilter;
 
-  const normalOrders = filteredOrders.filter(
-  (o) => o.paymentStatus === "PAID"
-);
+      const matchesSearch =
+        order.id?.toLowerCase().includes(searchLower) ||
+        order.customer?.toLowerCase().includes(searchLower);
+
+      return matchesStatus && matchesSearch;
+    });
+  }, [orders, activeFilter, search]);
+
+  const unpaidOrders = useMemo(() => {
+    return filteredOrders.filter(
+      (o) =>
+        o.paymentStatus !== "PAID" &&
+        !["CANCELLED", "REJECTED"].includes(o.rawStatus)
+    );
+  }, [filteredOrders]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -270,29 +213,26 @@ const UnpaidRow = ({ order, onMarkPaid }) => {
             </div>
           </div>
 
-          
+          {/* UNPAID SECTION */}
+          {unpaidOrders.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-lg font-bold text-red-600 mb-3">
+                ⚠ Unpaid Orders ({unpaidOrders.length})
+              </h2>
 
-            {/* 🔴 NEW: UNPAID SECTION */}
-            {unpaidOrders.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-lg font-bold text-red-600 mb-3">
-                  ⚠ Unpaid Orders ({unpaidOrders.length})
-                </h2>
-
-                <div className="space-y-2">
-                  {unpaidOrders.map((order) => (
-                    <UnpaidRow
-  key={order.id}
-  order={order}
-  onMarkPaid={handleMarkAsPaid}
-/>
-                  ))}
-                </div>
+              <div className="space-y-2">
+                {unpaidOrders.map((order) => (
+                  <UnpaidRow
+                    key={order.id}
+                    order={order}
+                    onMarkPaid={handleMarkAsPaid}
+                  />
+                ))}
               </div>
-            )}
+            </div>
+          )}
 
           <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 shadow-lg">
-
             {/* Filters */}
             <div className="flex overflow-x-auto gap-2 sm:gap-3 mb-5 sm:mb-6 pb-2">
               {["all", "live", "ready", "served", "completed", "cancelled", "rejected"].map(
@@ -300,7 +240,7 @@ const UnpaidRow = ({ order, onMarkPaid }) => {
                   <button
                     key={status}
                     onClick={() => setActiveFilter(status)}
-                    className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all
+                    className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer
                     ${
                       activeFilter === status
                         ? "bg-[#FC5C02] text-white shadow-md"
@@ -321,8 +261,7 @@ const UnpaidRow = ({ order, onMarkPaid }) => {
                 placeholder="Search by Order ID or Customer..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200
-                focus:outline-none focus:ring-2 focus:ring-[#FC5C02]/40 transition"
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FC5C02]/40 transition"
               />
             </div>
 
@@ -357,7 +296,9 @@ const UnpaidRow = ({ order, onMarkPaid }) => {
                     <tbody>
                       {filteredOrders.map((order) => (
                         <tr key={order.id} className="border-t hover:bg-[#FC5C02]/5">
-                          <td className="py-4 px-4 font-semibold font-mono text-xs">#{order.id.slice(-6)}</td>
+                          <td className="py-4 px-4 font-semibold font-mono text-xs">
+                            #{order.id ? String(order.id).slice(-6) : "------"}
+                          </td>
                           <td className="px-4">{order.customer}</td>
                           <td className="px-4">{order.table}</td>
                           <td className="px-4">
@@ -370,30 +311,30 @@ const UnpaidRow = ({ order, onMarkPaid }) => {
                           </td>
                           <td className="px-4 text-[#7C6B51]">{order.date}</td>
                           <td className="px-4">
-  {order.paymentStatus === "PAID" ? "Paid" : "Unpaid"}
+                            {order.paymentStatus === "PAID" ? "Paid" : "Unpaid"}
 
-  {order.paymentStatus !== "PAID" &&
- !["CANCELLED", "REJECTED"].includes(order.rawStatus) && (
-  <button
-    onClick={() => handleMarkAsPaid(order.id)}
-    className="ml-2 px-2 py-1 text-xs bg-green-500 text-white rounded"
-  >
-    Mark Paid
-  </button>
-)}
-</td>
+                            {order.paymentStatus !== "PAID" &&
+                              !["CANCELLED", "REJECTED"].includes(order.rawStatus) && (
+                                <button
+                                  onClick={() => handleMarkAsPaid(order.id)}
+                                  className="ml-2 px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 cursor-pointer"
+                                >
+                                  Mark Paid
+                                </button>
+                              )}
+                          </td>
                           <td className="px-4">
                             {order.rawStatus === "OTP_VERIFIED" && (
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => handleApprove(order.id)}
-                                  className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                  className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer"
                                 >
                                   Accept
                                 </button>
                                 <button
                                   onClick={() => handleReject(order.id)}
-                                  className="px-3 py-1 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                  className="px-3 py-1 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer"
                                 >
                                   Reject
                                 </button>
@@ -402,20 +343,21 @@ const UnpaidRow = ({ order, onMarkPaid }) => {
                             {order.kitchenStatus === "READY" && (
                               <button
                                 onClick={() => handleServe(order.id)}
-                                className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
                               >
                                 Serve
                               </button>
                             )}
 
-                            {order.kitchenStatus === "SERVED" && order.rawStatus !== "COMPLETED" && (
-  <button
-    onClick={() => handleComplete(order.id)}
-    className="px-3 py-1 text-xs bg-green-700 text-white rounded-lg"
-  >
-    Complete
-  </button>
-)}
+                            {order.kitchenStatus === "SERVED" &&
+                              order.rawStatus !== "COMPLETED" && (
+                                <button
+                                  onClick={() => handleComplete(order.id)}
+                                  className="px-3 py-1 text-xs bg-green-700 text-white rounded-lg hover:bg-green-800 cursor-pointer"
+                                >
+                                  Complete
+                                </button>
+                              )}
                           </td>
                         </tr>
                       ))}
@@ -429,12 +371,14 @@ const UnpaidRow = ({ order, onMarkPaid }) => {
                     <div key={order.id} className="bg-white rounded-2xl p-4 shadow-md border border-gray-100">
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <p className="font-bold text-sm font-mono">#{order.id.slice(-6)}</p>
+                          <p className="font-bold text-sm font-mono">
+                            #{order.id ? String(order.id).slice(-6) : "------"}
+                          </p>
                           <p className="text-xs text-gray-500">{order.date}</p>
                         </div>
                         <StatusBadge status={order.status} />
                       </div>
-                      
+
                       <div className="space-y-1 text-sm text-[#312B1E] mb-4">
                         <p><span className="text-gray-500">Customer:</span> <b>{order.customer}</b></p>
                         <p><span className="text-gray-500">Table:</span> <b>{order.table}</b></p>
@@ -471,30 +415,29 @@ const UnpaidRow = ({ order, onMarkPaid }) => {
                         )}
 
                         {order.paymentStatus !== "PAID" &&
- !["CANCELLED", "REJECTED"].includes(order.rawStatus) && (
-  <button
-    onClick={() => handleMarkAsPaid(order.id)}
-    className="px-4 py-2 text-xs bg-green-500 text-white rounded-lg font-semibold"
-  >
-    Mark Paid
-  </button>
-)}
+                          !["CANCELLED", "REJECTED"].includes(order.rawStatus) && (
+                            <button
+                              onClick={() => handleMarkAsPaid(order.id)}
+                              className="px-4 py-2 text-xs bg-green-500 text-white rounded-lg font-semibold"
+                            >
+                              Mark Paid
+                            </button>
+                          )}
 
-{order.kitchenStatus === "SERVED" && order.rawStatus !== "COMPLETED" && (
-  <button
-    onClick={() => handleComplete(order.id)}
-    className="px-4 py-2 text-xs bg-green-700 text-white rounded-lg font-semibold"
-  >
-    Complete
-  </button>
-)}
+                        {order.kitchenStatus === "SERVED" && order.rawStatus !== "COMPLETED" && (
+                          <button
+                            onClick={() => handleComplete(order.id)}
+                            className="px-4 py-2 text-xs bg-green-700 text-white rounded-lg font-semibold"
+                          >
+                            Complete
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               </>
             )}
-
           </div>
         </div>
       </main>
@@ -502,31 +445,29 @@ const UnpaidRow = ({ order, onMarkPaid }) => {
   );
 };
 
-const StatusBadge = ({ status }) => {
-  const styles = {
-  live: "bg-yellow-100 text-yellow-700",
-  ready: "bg-blue-100 text-blue-700",
-  served: "bg-purple-100 text-purple-700",
-  completed: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
-  rejected: "bg-gray-200 text-gray-700",
-  pending: "bg-gray-100 text-gray-600"
-};
-
-  const icons = {
-    live: <Clock size={14} />,
-    ready: <Clock size={14} />,
-    served: <CheckCircle2 size={14} />,
-    completed: <CheckCircle2 size={14} />,
-    cancelled: <XCircle size={14} />,
-    rejected: <XCircle size={14} />,
-  };
-
+const UnpaidRow = React.memo(({ order, onMarkPaid }) => {
   return (
-    <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs rounded-full font-semibold ${styles[status] || "bg-gray-100 text-gray-600"}`}>
-      {icons[status]} {status}
-    </span>
+    <div className="flex justify-between items-center bg-red-50 border border-red-200 rounded-xl p-3">
+      <div>
+        <p className="font-semibold text-sm">
+          #{order.id ? String(order.id).slice(-6) : "------"} - {order.customer}
+        </p>
+        <p className="text-xs text-gray-500">
+          Table: {order.table} | ₹{order.amount}
+        </p>
+      </div>
+
+      {!["CANCELLED", "REJECTED"].includes(order.rawStatus) && (
+        <button
+          onClick={() => onMarkPaid(order.id)}
+          className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 cursor-pointer"
+        >
+          Mark Paid
+        </button>
+      )}
+    </div>
   );
-};
+});
+UnpaidRow.displayName = "UnpaidRow";
 
 export default AdminOrders;

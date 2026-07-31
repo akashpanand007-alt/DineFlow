@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Package,
   Plus,
@@ -10,14 +10,8 @@ import {
 import AdminSidebar from "../common/adminSideBar";
 import API from "../../api/api";
 import socket from "../../socket";
-import AddProductModal from "../common/addProductModal"; 
-
-const COLORS = {
-  primary: "#FC5C02",
-  bg: "#E2CEAE",
-  text: "#312B1E",
-  muted: "#7C6B51",
-};
+import AddProductModal from "../common/addProductModal";
+import { COLORS } from "../../constants/theme";
 
 const AdminProducts = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -26,14 +20,6 @@ const AdminProducts = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [products, setProducts] = useState([]);
 
-  const categories = [
-    "all",
-    ...Array.from(
-      new Set(products.map((p) => p.category).filter(Boolean))
-    ),
-  ];
-
- 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -41,68 +27,86 @@ const AdminProducts = () => {
 
         const normalized = (res.data?.products || []).map((p) => ({
           ...p,
-          price: p.basePrice,
+          price: p.basePrice ?? p.price ?? 0,
         }));
 
         setProducts(normalized);
       } catch (e) {
+        console.error("Failed to fetch products:", e);
       }
     };
     fetchProducts();
   }, []);
 
- 
   useEffect(() => {
     socket.emit("join", { roomType: "admins" });
 
-    socket.on("product_created", (p) => {
+    const handleCreated = (p) => {
       setProducts((prev) => [
-        { ...p, price: p.basePrice },
+        { ...p, price: p.basePrice ?? p.price ?? 0 },
         ...prev,
       ]);
-    });
+    };
 
-    socket.on("product_updated", (p) => {
+    const handleUpdated = (p) => {
       setProducts((prev) =>
         prev.map((x) =>
-          x._id === p._id ? { ...p, price: p.basePrice } : x
+          x._id === p._id ? { ...p, price: p.basePrice ?? p.price ?? 0 } : x
         )
       );
-    });
+    };
 
-    socket.on("product_deleted", (id) => {
-      setProducts((prev) =>
-        prev.filter((x) => x._id !== id)
-      );
-    });
+    const handleDeleted = (id) => {
+      setProducts((prev) => prev.filter((x) => x._id !== id));
+    };
+
+    socket.on("product_created", handleCreated);
+    socket.on("product_updated", handleUpdated);
+    socket.on("product_deleted", handleDeleted);
 
     return () => {
-      socket.off("product_created");
-      socket.off("product_updated");
-      socket.off("product_deleted");
+      socket.off("product_created", handleCreated);
+      socket.off("product_updated", handleUpdated);
+      socket.off("product_deleted", handleDeleted);
     };
   }, []);
 
-  
-  const filteredProducts = products.filter((p) => {
-    const matchCategory =
-      activeCategory === "all" || p.category === activeCategory;
-    const matchSearch = p.name
-      ?.toLowerCase()
-      .includes(search.toLowerCase());
-    return matchCategory && matchSearch;
-  });
+  const categories = useMemo(() => {
+    return [
+      "all",
+      ...Array.from(
+        new Set(products.map((p) => p.category).filter(Boolean))
+      ),
+    ];
+  }, [products]);
 
-  
-  const handleDelete = async (id) => {
+  const filteredProducts = useMemo(() => {
+    const searchLower = search.toLowerCase();
+    return products.filter((p) => {
+      const matchCategory =
+        activeCategory === "all" || p.category === activeCategory;
+      const matchSearch = p.name
+        ?.toLowerCase()
+        .includes(searchLower);
+      return matchCategory && matchSearch;
+    });
+  }, [products, activeCategory, search]);
+
+  const handleDelete = useCallback(async (id) => {
     try {
-      setProducts((prev) =>
-        prev.filter((p) => p._id !== id)
-      );
+      setProducts((prev) => prev.filter((p) => p._id !== id));
       await API.delete(`/admin/products/delete/${id}`);
     } catch (e) {
+      console.error("Failed to delete product:", e);
     }
-  };
+  }, []);
+
+  const handleProductCreated = useCallback((newProduct) => {
+    setProducts((prev) => [
+      { ...newProduct, price: newProduct.basePrice ?? newProduct.price ?? 0 },
+      ...prev,
+    ]);
+  }, []);
 
   return (
     <div
@@ -144,7 +148,7 @@ const AdminProducts = () => {
 
             <button
               onClick={() => setShowAddModal(true)}
-              className="w-full sm:w-auto justify-center flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-white font-semibold shadow-md hover:opacity-90"
+              className="w-full sm:w-auto justify-center flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-white font-semibold shadow-md hover:opacity-90 cursor-pointer transition-opacity"
               style={{ backgroundColor: COLORS.primary }}
             >
               <Plus size={16} />
@@ -158,7 +162,7 @@ const AdminProducts = () => {
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
-                  className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition
+                  className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition cursor-pointer
                   ${
                     activeCategory === cat
                       ? "bg-[#FC5C02] text-white shadow"
@@ -180,8 +184,7 @@ const AdminProducts = () => {
                 placeholder="Search product..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 sm:py-3 rounded-xl border border-gray-200
-                focus:outline-none focus:ring-2 focus:ring-[#FC5C02]/40"
+                className="w-full pl-11 pr-4 py-2.5 sm:py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FC5C02]/40"
               />
             </div>
 
@@ -189,49 +192,49 @@ const AdminProducts = () => {
               <table className="w-full text-sm min-w-[520px]">
                 <thead className="bg-[#FC5C02]/5 text-[#7C6B51]">
                   <tr>
-                    <th className="py-3 sm:py-4 px-4 text-left">
-                      Product
-                    </th>
-                    <th className="px-4 text-left">
-                      Category
-                    </th>
-                    <th className="px-4 text-center">
-                      Price
-                    </th>
-                    <th className="px-4 text-left">
-                      Actions
-                    </th>
+                    <th className="py-3 sm:py-4 px-4 text-left">Product</th>
+                    <th className="px-4 text-left">Category</th>
+                    <th className="px-4 text-center">Price</th>
+                    <th className="px-4 text-left">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProducts.map((p) => (
-                    <tr
-                      key={p._id}
-                      className="border-t hover:bg-[#FC5C02]/5"
-                    >
-                      <td className="py-3 sm:py-4 px-4 font-semibold text-[#312B1E]">
-                        {p.name}
-                      </td>
-                      <td className="px-4 text-[#7C6B51]">
-                        {p.category}
-                      </td>
-                      <td className="px-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <IndianRupee size={14} />
-                          {p.price}
-                        </div>
-                      </td>
-                      <td className="px-4">
-                        <button
-                          onClick={() => handleDelete(p._id)}
-                          className="px-3 py-1 text-xs rounded-lg bg-red-100 text-red-700 font-semibold flex items-center gap-1"
-                        >
-                          <Trash2 size={12} />
-                          Delete
-                        </button>
+                  {filteredProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="py-8 text-center text-[#7C6B51]">
+                        No products found
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredProducts.map((p) => (
+                      <tr
+                        key={p._id}
+                        className="border-t hover:bg-[#FC5C02]/5"
+                      >
+                        <td className="py-3 sm:py-4 px-4 font-semibold text-[#312B1E]">
+                          {p.name}
+                        </td>
+                        <td className="px-4 text-[#7C6B51]">
+                          {p.category}
+                        </td>
+                        <td className="px-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <IndianRupee size={14} />
+                            {p.price}
+                          </div>
+                        </td>
+                        <td className="px-4">
+                          <button
+                            onClick={() => handleDelete(p._id)}
+                            className="px-3 py-1 text-xs rounded-lg bg-red-100 text-red-700 font-semibold flex items-center gap-1 cursor-pointer hover:bg-red-200"
+                          >
+                            <Trash2 size={12} />
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -239,13 +242,10 @@ const AdminProducts = () => {
         </div>
       </main>
 
-      {/* ✅ EXTRACTED MODAL */}
       <AddProductModal
         open={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onCreated={(newProduct) =>
-          setProducts((prev) => [newProduct, ...prev])
-        }
+        onCreated={handleProductCreated}
       />
     </div>
   );

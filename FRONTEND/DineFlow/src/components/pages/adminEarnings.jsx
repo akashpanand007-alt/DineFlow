@@ -1,27 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   IndianRupee,
   Search,
   Menu,
-  Calendar,
-  CheckCircle2,
 } from "lucide-react";
 import AdminSidebar from "../common/adminSideBar";
 import API from "../../api/api";
-
-const COLORS = {
-  primary: "#FC5C02",
-  bg: "#E2CEAE",
-  text: "#312B1E",
-  muted: "#7C6B51",
-};
+import StatusBadge from "../common/StatusBadge";
+import { COLORS } from "../../constants/theme";
 
 const AdminEarnings = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [range, setRange] = useState("today");
   const [earnings, setEarnings] = useState([]);
-  const [kitchens, setKitchens] = useState([]); 
+  const [kitchens, setKitchens] = useState([]);
 
   /* ===== FETCH KITCHENS ===== */
   useEffect(() => {
@@ -30,6 +23,7 @@ const AdminEarnings = () => {
         const res = await API.get("/admin/kitchens");
         setKitchens(res.data?.kitchens || []);
       } catch (e) {
+        console.error("Failed to fetch kitchens:", e);
       }
     };
     fetchKitchens();
@@ -51,63 +45,45 @@ const AdminEarnings = () => {
             ? data.monthly
             : data.yearly;
 
-        const normalized = (source || []).map((e, i) => ({
-  id: i,
-  kitchen: kitchens[0]?.name || "Kitchen", 
-  orders: e.totalOrders || 0,
-  completed: e.completedOrders ?? e.totalOrders ?? 0,
-  amount: e.totalEarnings || 0,
-  date: e._id || new Date().toISOString().slice(0, 10),
-  status: "settled",
-}));
+        const normalized = (source || []).filter(Boolean).map((e, i) => ({
+          id: i,
+          kitchen: kitchens[0]?.name || "Kitchen",
+          orders: e.totalOrders || 0,
+          completed: e.completedOrders ?? e.totalOrders ?? 0,
+          amount: e.totalEarnings || 0,
+          date: e._id || new Date().toISOString().slice(0, 10),
+          status: "settled",
+        }));
 
         setEarnings(normalized);
       } catch (e) {
+        console.error("Failed to fetch earnings:", e);
       }
     };
 
     if (kitchens.length) fetchEarnings();
   }, [range, kitchens]);
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  const isSameWeek = (d) => {
-    const diff =
-      (new Date(today) - new Date(d)) / (1000 * 60 * 60 * 24);
-    return diff <= 7;
-  };
-
-  const isSameMonth = (d) => {
-    const t = new Date(today);
-    const dt = new Date(d);
-    return (
-      t.getMonth() === dt.getMonth() &&
-      t.getFullYear() === dt.getFullYear()
+  const filtered = useMemo(() => {
+    const searchLower = search.toLowerCase();
+    return earnings.filter((e) =>
+      e.kitchen.toLowerCase().includes(searchLower)
     );
-  };
+  }, [earnings, search]);
 
-  const isSameYear = (d) => {
-    return new Date(d).getFullYear() === new Date(today).getFullYear();
-  };
+  const totalRevenue = useMemo(() => earnings.reduce((s, e) => s + e.amount, 0), [earnings]);
+  const totalOrders = useMemo(() => earnings.reduce((s, e) => s + e.orders, 0), [earnings]);
+  const settledCount = useMemo(() => earnings.reduce((s, e) => s + e.completed, 0), [earnings]);
 
-  const rangeFiltered = earnings;
-
-  const filtered = rangeFiltered.filter((e) =>
-  e.kitchen.toLowerCase().includes(search.toLowerCase())
-);
-
-  const totalRevenue = rangeFiltered.reduce((s, e) => s + e.amount, 0);
-  const totalOrders = rangeFiltered.reduce((s, e) => s + e.orders, 0);
-  const settledCount = rangeFiltered.reduce((s, e) => s + e.completed, 0);
-
-  const revenueTitle =
-    range === "today"
+  const revenueTitle = useMemo(() => {
+    return range === "today"
       ? "Today's Revenue"
       : range === "week"
       ? "Weekly Revenue"
       : range === "month"
       ? "Monthly Revenue"
       : "Yearly Revenue";
+  }, [range]);
 
   return (
     <div
@@ -153,7 +129,7 @@ const AdminEarnings = () => {
                 <button
                   key={r}
                   onClick={() => setRange(r)}
-                  className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition
+                  className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition cursor-pointer
                   ${
                     range === r
                       ? "bg-[#FC5C02] text-white shadow"
@@ -172,8 +148,7 @@ const AdminEarnings = () => {
                 placeholder="Search kitchen..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 sm:py-3 rounded-xl border border-gray-200
-                focus:outline-none focus:ring-2 focus:ring-[#FC5C02]/40"
+                className="w-full pl-11 pr-4 py-2.5 sm:py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FC5C02]/40"
               />
             </div>
 
@@ -224,35 +199,12 @@ const AdminEarnings = () => {
   );
 };
 
-const KpiCard = ({ title, value }) => (
+const KpiCard = React.memo(({ title, value }) => (
   <div className="bg-white/80 backdrop-blur-md rounded-2xl p-5 shadow-md">
     <p className="text-sm text-[#7C6B51]">{title}</p>
     <h2 className="text-2xl font-bold text-[#312B1E] mt-1">{value}</h2>
   </div>
-);
-
-const StatusBadge = ({ status }) => {
-  const styles = {
-    settled: "bg-green-100 text-green-700",
-    pending: "bg-yellow-100 text-yellow-700",
-  };
-
-  const icons = {
-    settled: <CheckCircle2 size={14} />,
-    pending: <Calendar size={14} />,
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1 px-3 py-1 text-xs rounded-full font-semibold ${styles[status]}`}
-    >
-      {icons[status]}
-      {status}
-    </span>
-  );
-};
+));
+KpiCard.displayName = "KpiCard";
 
 export default AdminEarnings;
-
-
-

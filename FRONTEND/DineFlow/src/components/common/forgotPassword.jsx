@@ -3,15 +3,9 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Mail, KeyRound, Lock } from "lucide-react";
 import API from "../../api/api";
+import { COLORS } from "../../constants/theme";
 
-const COLORS = {
-  primary: "#FC5C02",
-  bg: "#E2CEAE",
-  text: "#312B1E",
-  muted: "#7C6B51",
-};
-
-const ForgotPassword = ({ role }) => {
+const ForgotPassword = ({ role = "admin" }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
@@ -26,6 +20,11 @@ const ForgotPassword = ({ role }) => {
   };
 
   const handleSendOtp = async () => {
+    if (!form.email) {
+      toast.error("Please enter your email");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -37,6 +36,7 @@ const ForgotPassword = ({ role }) => {
       toast.success("OTP sent to email");
       setStep(2);
     } catch (err) {
+      console.error("Failed to send OTP:", err);
       toast.error(err.response?.data?.message || "Failed to send OTP");
     } finally {
       setLoading(false);
@@ -44,6 +44,11 @@ const ForgotPassword = ({ role }) => {
   };
 
   const handleResetPassword = async () => {
+    if (!form.otp || !form.newPassword) {
+      toast.error("Please enter OTP and new password");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -51,15 +56,20 @@ const ForgotPassword = ({ role }) => {
         email: form.email,
         otp: form.otp,
         newPassword: form.newPassword,
-        role:"admin"
+        role,
       });
 
       toast.success("Password reset successful");
 
       setTimeout(() => {
-        navigate("/admin/login");
-      }, 100);
+        if (role === "kitchen") {
+          navigate("/kitchen/login");
+        } else {
+          navigate("/admin/login");
+        }
+      }, 1000);
     } catch (err) {
+      console.error("Failed to reset password:", err);
       toast.error(err.response?.data?.message || "Failed to reset password");
     } finally {
       setLoading(false);
@@ -99,14 +109,15 @@ const ForgotPassword = ({ role }) => {
                 placeholder="Enter your email"
                 value={form.email}
                 onChange={handleChange}
-                className="w-full bg-transparent p-3 outline-none"
+                onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
+                className="w-full bg-transparent p-3 outline-none text-[#312B1E]"
               />
             </div>
 
             <button
               onClick={handleSendOtp}
               disabled={loading}
-              className="w-full py-3 rounded-xl font-bold text-white disabled:opacity-60"
+              className="w-full py-3 rounded-xl font-bold text-white cursor-pointer hover:opacity-90 disabled:opacity-60 transition-opacity"
               style={{ backgroundColor: COLORS.primary }}
             >
               {loading ? "Sending..." : "Send OTP"}
@@ -125,7 +136,7 @@ const ForgotPassword = ({ role }) => {
                 placeholder="Enter OTP"
                 value={form.otp}
                 onChange={handleChange}
-                className="w-full bg-transparent p-3 outline-none"
+                className="w-full bg-transparent p-3 outline-none text-[#312B1E]"
               />
             </div>
 
@@ -137,14 +148,15 @@ const ForgotPassword = ({ role }) => {
                 placeholder="New Password"
                 value={form.newPassword}
                 onChange={handleChange}
-                className="w-full bg-transparent p-3 outline-none"
+                onKeyDown={(e) => e.key === "Enter" && handleResetPassword()}
+                className="w-full bg-transparent p-3 outline-none text-[#312B1E]"
               />
             </div>
 
             <button
               onClick={handleResetPassword}
               disabled={loading}
-              className="w-full py-3 rounded-xl font-bold text-white disabled:opacity-60"
+              className="w-full py-3 rounded-xl font-bold text-white cursor-pointer hover:opacity-90 disabled:opacity-60 transition-opacity"
               style={{ backgroundColor: COLORS.primary }}
             >
               {loading ? "Updating..." : "Reset Password"}

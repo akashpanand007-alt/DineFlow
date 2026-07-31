@@ -7,30 +7,27 @@ const AdminServeNotification = () => {
   const [order, setOrder] = useState(null);
   const [visible, setVisible] = useState(false);
 
-  
   const soundRef = useRef(
     new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg")
   );
 
   useEffect(() => {
     const handleOrderStatusChanged = (updatedOrder) => {
-      
       if (updatedOrder.kitchenStatus !== "READY") return;
 
-      
-      
       setOrder(updatedOrder);
       setVisible(true);
 
-      
-      soundRef.current.currentTime = 0;
+      if (soundRef.current) {
+        soundRef.current.currentTime = 0;
+        soundRef.current.play().catch(() => {});
+      }
     };
 
     const joinServiceRoom = () => {
       socket.emit("join_admin");
     };
 
-    
     socket.on("order_status_changed", handleOrderStatusChanged);
     socket.on("connect", joinServiceRoom);
 
@@ -38,19 +35,19 @@ const AdminServeNotification = () => {
       joinServiceRoom();
     }
 
-    
     const checkReadyOrders = async () => {
       try {
         const res = await API.get("/orders/service/active");
         const ready = res.data.orders?.find(
           (o) => o.kitchenStatus === "READY"
-        ); 
+        );
 
         if (ready) {
           setOrder(ready);
           setVisible(true);
         }
       } catch (err) {
+        console.error("Failed to check ready orders:", err);
       }
     };
 
@@ -68,22 +65,15 @@ const AdminServeNotification = () => {
     try {
       const orderId = order._id || order.id;
 
-      
       await API.put(`/orders/${orderId}/status`, {
-  orderId: orderId,
-  kitchenStatus: "SERVED",
-});
-
-      
-      socket.emit("order_status_changed", {
-        _id: orderId,
-        status: "SERVED",
+        orderId: orderId,
+        kitchenStatus: "SERVED",
       });
 
       setVisible(false);
       setTimeout(() => setOrder(null), 300);
-
     } catch (err) {
+      console.error("Failed to serve order:", err);
     }
   };
 
@@ -96,7 +86,6 @@ const AdminServeNotification = () => {
       }`}
     >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100">
-        
         <div className="flex items-center gap-2 mb-2 text-green-600">
           <BellRing size={24} className="animate-bounce" />
           <h2 className="text-xl font-bold text-gray-800">
@@ -120,12 +109,11 @@ const AdminServeNotification = () => {
 
         <button
           onClick={serveOrder}
-          className="w-full flex items-center justify-center gap-2 py-3.5 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 active:scale-95 transition-all"
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 active:scale-95 cursor-pointer transition-all"
         >
           <CheckCircle size={20} />
           Mark as Served
         </button>
-
       </div>
     </div>
   );

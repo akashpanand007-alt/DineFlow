@@ -3,13 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Shield, Mail, Lock, CheckCircle2 } from "lucide-react";
 import API from "../../api/api";
 import { useAdminAuth } from "../../context/adminAuthContext";
-
-const COLORS = {
-  primary: "#FC5C02",
-  bg: "#E2CEAE",
-  text: "#312B1E",
-  muted: "#7C6B51",
-};
+import { COLORS } from "../../constants/theme";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -20,94 +14,36 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showToast, setShowToast] = useState(false);
-  const [isForgot, setIsForgot] = useState(false);
 
   const handleLogin = async () => {
-  if (!email || !password) {
-    setError("Please enter all fields");
-    return;
-  }
-
-  setLoading(true);
-  setError("");
-
-  try {
-    const res = await API.post(
-      "/admin/login",
-      { email, password },
-      { withCredentials: true }
-    );
-
-    if (res.data?.success) {
-      setShowToast(true);
-
-      
-      await checkAuth();
-
-      navigate("/admin/dashboard");
-    } else {
-      setError(res.data?.message || "Invalid admin credentials");
+    if (!email || !password) {
+      setError("Please enter all fields");
+      return;
     }
-  } catch (err) {
-    setError(err.response?.data?.message || "Invalid admin credentials");
-  } finally {
-    setLoading(false);
-  }
-};
 
-  const handleSendOtp = async () => {
-  if (!email) {
-    setError("Enter your email");
-    return;
-  }
-
-  try {
     setLoading(true);
     setError("");
 
-    await API.post("/auth/password-reset/request", {
-      email,
-      role: "admin",
-    });
+    try {
+      const res = await API.post(
+        "/admin/login",
+        { email, password },
+        { withCredentials: true }
+      );
 
-    setStep(2);
-  } catch (err) {
-    setError(err.response?.data?.message || "Failed to send OTP");
-  } finally {
-    setLoading(false);
-  }
-};
-
-const handleResetPassword = async () => {
-  if (!otp || !newPassword) {
-    setError("Fill all fields");
-    return;
-  }
-
-  try {
-    setLoading(true);
-    setError("");
-
-    await API.post("/auth/password-reset/verify", {
-      email,
-      otp,
-      newPassword,
-      role: "admin",
-    });
-
-    setIsForgot(false);
-    setStep(1);
-    setOtp("");
-    setNewPassword("");
-    setPassword("");
-
-    setShowToast(true);
-  } catch (err) {
-    setError(err.response?.data?.message || "Reset failed");
-  } finally {
-    setLoading(false);
-  }
-};
+      if (res.data?.success) {
+        setShowToast(true);
+        await checkAuth();
+        navigate("/admin/dashboard");
+      } else {
+        setError(res.data?.message || "Invalid admin credentials");
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Invalid admin credentials");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div
@@ -163,29 +99,28 @@ const handleResetPassword = async () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
               className="w-full bg-transparent p-3 outline-none"
             />
           </div>
           <p
-  onClick={() => navigate("/admin/forgot-password")}
-  className="text-sm text-red-500 cursor-pointer mt-2"
->
-  Forgot Password?
-</p>
+            onClick={() => navigate("/admin/forgot-password")}
+            className="text-sm text-red-500 cursor-pointer mt-2 text-right hover:underline"
+          >
+            Forgot Password?
+          </p>
         </div>
 
-     
+        {error && <p className="text-sm text-red-500 mb-3 text-center">{error}</p>}
 
-        {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
-
-   <button
-  onClick={handleLogin}
-  disabled={loading}
-  className="w-full py-3 rounded-xl font-bold text-white"
-  style={{ backgroundColor: COLORS.primary }}
->
-  {loading ? "Logging in..." : "Login"}
-</button>
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          className="w-full py-3 rounded-xl font-bold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
+          style={{ backgroundColor: COLORS.primary }}
+        >
+          {loading ? "Logging in..." : "Login"}
+        </button>
       </div>
     </div>
   );

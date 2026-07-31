@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   BarChart3,
   Menu,
@@ -13,13 +13,8 @@ import API from "../../api/api";
 import socket from "../../socket";
 import AdminSidebar from "../common/adminSideBar";
 import LoadingPage from "../layout/loading";
-
-
-const COLORS = {
-  primary: "#FC5C02",
-  bg: "#E2CEAE",
-  text: "#312B1E",
-};
+import { COLORS } from "../../constants/theme";
+import { formatOrder } from "../../utils/formatOrder";
 
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -40,68 +35,73 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  
-
-  const handleAcceptOrder = async (orderId) => {
+  const handleAcceptOrder = useCallback(async (orderId) => {
     setRecentOrders((prev) =>
       prev.map((o) =>
-        o._id === orderId ? { ...o, status: "CONFIRMED", orderStatus: "CONFIRMED" } : o
+        o._id === orderId || o.id === orderId
+          ? { ...o, status: "live", rawStatus: "CONFIRMED", orderStatus: "CONFIRMED" }
+          : o
       )
     );
     try {
       await API.post("/orders/approve", { orderId });
     } catch (err) {
+      console.error("Failed to accept order:", err);
       setRecentOrders((prev) =>
         prev.map((o) =>
-          o._id === orderId ? { ...o, status: "OTP_VERIFIED", orderStatus: "OTP_VERIFIED" } : o
+          o._id === orderId || o.id === orderId
+            ? { ...o, status: "pending", rawStatus: "OTP_VERIFIED", orderStatus: "OTP_VERIFIED" }
+            : o
         )
       );
     }
-  };
+  }, []);
 
-  const handleServeOrder = async (orderId) => {
-  try {
-    await API.post("/orders/serve", { orderId });
-  } catch (err) {
-  }
-};
+  const handleServeOrder = useCallback(async (orderId) => {
+    try {
+      await API.post("/orders/serve", { orderId });
+    } catch (err) {
+      console.error("Failed to serve order:", err);
+    }
+  }, []);
 
-const handleMarkAsPaid = async (orderId) => {
-  try {
-    await API.patch(`/orders/mark-paid/${orderId}`);
+  const handleMarkAsPaid = useCallback(async (orderId) => {
+    try {
+      await API.patch(`/orders/mark-paid/${orderId}`);
 
+      setRecentOrders((prev) =>
+        prev.map((o) =>
+          o._id === orderId || o.id === orderId
+            ? { ...o, paymentStatus: "PAID" }
+            : o
+        )
+      );
+    } catch (err) {
+      console.error("Failed to mark order as paid:", err);
+    }
+  }, []);
+
+  const handleCompleteOrder = useCallback(async (orderId) => {
     setRecentOrders((prev) =>
       prev.map((o) =>
-        o._id === orderId
-          ? { ...o, paymentStatus: "PAID" }
+        o._id === orderId || o.id === orderId
+          ? {
+              ...o,
+              orderStatus: "COMPLETED",
+              status: "completed",
+              rawStatus: "COMPLETED",
+              kitchenStatus: "SERVED",
+            }
           : o
       )
     );
-  } catch (err) {
-  }
-};
 
-const handleCompleteOrder = async (orderId) => {
-  
-  setRecentOrders((prev) =>
-    prev.map((o) =>
-      o._id === orderId
-        ? {
-            ...o,
-            orderStatus: "COMPLETED",
-            status: "COMPLETED",
-            kitchenStatus: "SERVED",
-          }
-        : o
-    )
-  );
-
-  try {
-    await API.post("/orders/complete", { orderId });
-  } catch (err) {
-  }
-};
-  
+    try {
+      await API.post("/orders/complete", { orderId });
+    } catch (err) {
+      console.error("Failed to complete order:", err);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -120,9 +120,11 @@ const handleCompleteOrder = async (orderId) => {
           occupiedTables: data?.occupiedTables ?? 0,
         });
 
-        setRecentOrders(data?.recentOrders ?? []);
+        const formattedOrders = (data?.recentOrders ?? []).map(formatOrder).filter(Boolean);
+        setRecentOrders(formattedOrders);
         setRecentTables(data?.recentTables ?? []);
       } catch (err) {
+        console.error("Failed to fetch dashboard:", err);
         setError("Failed to load dashboard");
       } finally {
         setLoading(false);
@@ -132,42 +134,19 @@ const handleCompleteOrder = async (orderId) => {
     fetchDashboard();
   }, []);
 
-  
-
   useEffect(() => {
-    
-
     const upsertOrder = (order) => {
+      const formatted = formatOrder(order);
+      if (!formatted) return;
+
       setRecentOrders((prev) => {
-        const exists = prev.some((o) => o._id === order._id);
-
-        
-        let tableDisplay = "—";
-        if (typeof order.tableId === 'string') {
-            tableDisplay = order.tableId;
-        } else if (order.tableId?.number) {
-            tableDisplay = order.tableId.number;
-        } else if (order.table) {
-            tableDisplay = order.table;
-        }
-
-        const normalizedOrder = {
-  ...order,
-  _id: order._id,
-  status: order.orderStatus || order.status,
-  kitchenStatus: order.kitchenStatus || "",
-  tableId: tableDisplay,
-  amount: order.totalAmount || order.amount || 0,
-  paymentMethod: order.payment?.method || "—",
-  paymentStatus: order.payment?.status || "—"   
-};
-
+        const exists = prev.some((o) => o.id === formatted.id || o._id === formatted.id);
         if (exists) {
           return prev.map((o) =>
-            o._id === order._id ? { ...o, ...normalizedOrder } : o
+            o.id === formatted.id || o._id === formatted.id ? { ...o, ...formatted } : o
           );
         }
-        return [normalizedOrder, ...prev];
+        return [formatted, ...prev];
       });
     };
 
@@ -216,12 +195,12 @@ const handleCompleteOrder = async (orderId) => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <RecentOrders
-  orders={recentOrders}
-  onAccept={handleAcceptOrder}
-  onServe={handleServeOrder}
-  onMarkPaid={handleMarkAsPaid}
-  onComplete={handleCompleteOrder}
-/>
+            orders={recentOrders}
+            onAccept={handleAcceptOrder}
+            onServe={handleServeOrder}
+            onMarkPaid={handleMarkAsPaid}
+            onComplete={handleCompleteOrder}
+          />
           <RecentTables tables={recentTables} />
         </div>
       </main>
@@ -229,9 +208,7 @@ const handleCompleteOrder = async (orderId) => {
   );
 };
 
-
-
-const DashboardHeader = () => (
+const DashboardHeader = React.memo(() => (
   <div className="mb-10">
     <div className="flex items-center gap-3 p-5 rounded-3xl shadow-lg bg-gradient-to-br from-[#FC5C0222] to-white">
       <BarChart3 size={32} color="#FC5C02" />
@@ -245,9 +222,10 @@ const DashboardHeader = () => (
       </div>
     </div>
   </div>
-);
+));
+DashboardHeader.displayName = "DashboardHeader";
 
-const StatsGrid = ({ stats }) => (
+const StatsGrid = React.memo(({ stats }) => (
   <>
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
       <SummaryCard icon={<ClipboardList />} title="Live Orders" value={stats.liveOrders} />
@@ -262,9 +240,10 @@ const StatsGrid = ({ stats }) => (
       <SummaryCard icon={<Users />} title="Occupied Tables" value={stats.occupiedTables} />
     </div>
   </>
-);
+));
+StatsGrid.displayName = "StatsGrid";
 
-const SummaryCard = ({ icon, title, value }) => (
+const SummaryCard = React.memo(({ icon, title, value }) => (
   <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-lg">
     <div className="flex items-center gap-2 mb-3 text-[#7C6B51]">
       {icon}
@@ -272,100 +251,94 @@ const SummaryCard = ({ icon, title, value }) => (
     </div>
     <h2 className="text-3xl font-bold text-[#312B1E]">{value}</h2>
   </div>
-);
+));
+SummaryCard.displayName = "SummaryCard";
 
-const RecentOrders = ({ orders, onAccept, onServe, onMarkPaid, onComplete }) => {
+const RecentOrders = React.memo(({ orders, onAccept, onServe, onMarkPaid, onComplete }) => {
   return (
     <RecentCard title="Recent Orders">
       {orders.length === 0 ? (
         <p className="text-sm text-[#7C6B51]">No recent orders</p>
       ) : (
         orders.map((o) => {
-          const rawStatus = (o.orderStatus || o.status || "").toUpperCase();
+          const rawStatus = (o.rawStatus || o.orderStatus || o.status || "").toUpperCase();
+          const kitchenStatus = (o.kitchenStatus || "").toUpperCase();
+          const paymentLabel = o.paymentStatus === "PAID" ? "Paid" : "Unpaid";
 
-const kitchenStatus = (o.kitchenStatus || "").toUpperCase();
-const paymentLabel =
-  o.paymentStatus === "PAID" ? "Paid" : "Unpaid";
+          let status = o.status || "pending";
 
-let status = "pending";
+          if (rawStatus === "COMPLETED") status = "completed";
+          else if (rawStatus === "CREATED") status = "pending";
+          else if (rawStatus === "CONFIRMED") status = "live";
+          else if (rawStatus === "OTP_PENDING" || rawStatus === "OTP_VERIFIED") status = "pending";
+          else if (rawStatus === "CANCELLED") status = "cancelled";
+          else if (rawStatus === "REJECTED") status = "rejected";
 
-
-if (rawStatus === "COMPLETED") status = "completed";
-else if (rawStatus === "CREATED") status = "pending";
-else if (rawStatus === "CONFIRMED") status = "live";
-else if (rawStatus === "OTP_PENDING") status = "pending";
-else if (rawStatus === "OTP_VERIFIED") status = "pending";
-else if (rawStatus === "CANCELLED") status = "cancelled";
-else if (rawStatus === "REJECTED") status = "rejected";
-
-
-if (rawStatus !== "COMPLETED") {
-  if (kitchenStatus === "READY") status = "ready";
-  if (kitchenStatus === "SERVED") status = "served";
-}
+          if (rawStatus !== "COMPLETED") {
+            if (kitchenStatus === "READY") status = "ready";
+            if (kitchenStatus === "SERVED") status = "served";
+          }
           
-          const tableName = o.table || o.tableId || "—";
-          const displayAmount = o.amount ?? o.totalAmount ?? 0;
+          const tableName = o.table || "—";
+          const displayAmount = o.amount ?? 0;
+          const orderId = o.id || o._id;
 
           return (
             <RowItem
-  key={o._id}
-
-  
-
-label={`${tableName} • ₹${displayAmount} • ${paymentLabel}`}
-  status={status}
+              key={orderId}
+              label={`${tableName} • ₹${displayAmount} • ${paymentLabel}`}
+              status={status}
               action={
-  <>
-    {status === "OTP_VERIFIED" && (
-      <button
-        onClick={() => onAccept(o._id)}
-        className="ml-3 px-3 py-1 text-xs bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
-      >
-        Accept
-      </button>
-    )}
+                <>
+                  {rawStatus === "OTP_VERIFIED" && (
+                    <button
+                      onClick={() => onAccept(orderId)}
+                      className="ml-3 px-3 py-1 text-xs bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                    >
+                      Accept
+                    </button>
+                  )}
 
-    {kitchenStatus === "READY" && (
-      <button
-        onClick={() => onServe(o._id)}
-        className="ml-3 px-3 py-1 text-xs bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-      >
-        Serve
-      </button>
-    )}
+                  {kitchenStatus === "READY" && (
+                    <button
+                      onClick={() => onServe(orderId)}
+                      className="ml-3 px-3 py-1 text-xs bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                    >
+                      Serve
+                    </button>
+                  )}
 
-    {kitchenStatus === "SERVED" &&
- !["COMPLETED", "CANCELLED", "REJECTED"].includes(rawStatus) && (
-  <button
-    onClick={() => onComplete(o._id)}
-    className="ml-3 px-3 py-1 text-xs bg-green-700 text-white rounded-lg"
-  >
-    Complete
-  </button>
-)}
+                  {kitchenStatus === "SERVED" &&
+                    !["COMPLETED", "CANCELLED", "REJECTED"].includes(rawStatus) && (
+                      <button
+                        onClick={() => onComplete(orderId)}
+                        className="ml-3 px-3 py-1 text-xs bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors"
+                      >
+                        Complete
+                      </button>
+                    )}
 
-    {/* ✅ NEW: Mark as Paid */}
-{o.paymentStatus !== "PAID" &&
- !["CANCELLED", "REJECTED"].includes(rawStatus) && (
-  <button
-    onClick={() => onMarkPaid(o._id)}
-    className="ml-3 px-3 py-1 text-xs bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
-  >
-    Mark Paid
-  </button>
-)}
-  </>
-}
+                  {o.paymentStatus !== "PAID" &&
+                    !["CANCELLED", "REJECTED"].includes(rawStatus) && (
+                      <button
+                        onClick={() => onMarkPaid(orderId)}
+                        className="ml-3 px-3 py-1 text-xs bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                      >
+                        Mark Paid
+                      </button>
+                    )}
+                </>
+              }
             />
           );
         })
       )}
     </RecentCard>
   );
-};
+});
+RecentOrders.displayName = "RecentOrders";
 
-const RecentTables = ({ tables }) => (
+const RecentTables = React.memo(({ tables }) => (
   <RecentCard title="Table Status">
     {tables.length === 0 ? (
       <p className="text-sm text-[#7C6B51]">No tables active</p>
@@ -379,31 +352,34 @@ const RecentTables = ({ tables }) => (
       ))
     )}
   </RecentCard>
-);
+));
+RecentTables.displayName = "RecentTables";
 
-const RecentCard = ({ title, children }) => (
+const RecentCard = React.memo(({ title, children }) => (
   <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-lg">
     <h3 className="text-lg font-bold mb-4 text-[#312B1E]">{title}</h3>
     <div className="space-y-2">
       {children}
     </div>
   </div>
-);
+));
+RecentCard.displayName = "RecentCard";
 
-const RowItem = ({ label, status, action }) => {
+const RowItem = React.memo(({ label, status, action }) => {
   const styles = {
-  pending: "bg-gray-100 text-gray-700",
-  confirmed: "bg-green-100 text-green-700",
-  created: "bg-blue-100 text-blue-700",
-  otp_verified: "bg-purple-100 text-purple-700",
-  cancelled: "bg-red-100 text-red-700",
-  rejected: "bg-red-100 text-red-700",
-  occupied: "bg-red-100 text-red-700",
-  available: "bg-green-100 text-green-700",
-  served: "bg-green-100 text-green-700",
-  ready: "bg-blue-100 text-blue-700",
-  live: "bg-yellow-100 text-yellow-700"
-};
+    pending: "bg-gray-100 text-gray-700",
+    confirmed: "bg-green-100 text-green-700",
+    created: "bg-blue-100 text-blue-700",
+    otp_verified: "bg-purple-100 text-purple-700",
+    cancelled: "bg-red-100 text-red-700",
+    rejected: "bg-red-100 text-red-700",
+    occupied: "bg-red-100 text-red-700",
+    available: "bg-green-100 text-green-700",
+    served: "bg-green-100 text-green-700",
+    ready: "bg-blue-100 text-blue-700",
+    live: "bg-yellow-100 text-yellow-700",
+    completed: "bg-green-100 text-green-700",
+  };
 
   return (
     <div className="flex justify-between items-center border-b border-gray-100 last:border-0 py-2">
@@ -420,6 +396,7 @@ const RowItem = ({ label, status, action }) => {
       </div>
     </div>
   );
-};
+});
+RowItem.displayName = "RowItem";
 
 export default AdminDashboard;

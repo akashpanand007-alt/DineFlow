@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Table2,
   Search,
-  CheckCircle2,
-  XCircle,
   Plus,
   Trash2,
   Menu,
@@ -13,13 +11,9 @@ import {
 import AdminSidebar from "../common/adminSideBar";
 import API from "../../api/api";
 import socket from "../../socket";
-
-const COLORS = {
-  primary: "#FC5C02",
-  bg: "#E2CEAE",
-  text: "#312B1E",
-  muted: "#7C6B51",
-};
+import StatusBadge from "../common/StatusBadge";
+import { Input } from "../common/FormInputs";
+import { COLORS } from "../../constants/theme";
 
 const AdminTables = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -35,6 +29,7 @@ const AdminTables = () => {
         const res = await API.get("/admin/tables");
         setTables(res.data?.tables || []);
       } catch (e) {
+        console.error("Failed to fetch tables:", e);
       }
     };
     fetchTables();
@@ -42,55 +37,69 @@ const AdminTables = () => {
 
   useEffect(() => {
     socket.emit("join", { roomType: "admins" });
-    socket.on("table_created", (t) => setTables((prev) => [t, ...prev]));
-    socket.on("table_updated", (t) => setTables((prev) => prev.map((x) => (x._id === t._id ? t : x))));
-    socket.on("table_deleted", (id) => setTables((prev) => prev.filter((x) => x._id !== id)));
-    socket.on("table_map_update", (t) => {
+
+    const handleCreated = (t) => setTables((prev) => [t, ...prev]);
+    const handleUpdated = (t) => setTables((prev) => prev.map((x) => (x._id === t._id ? t : x)));
+    const handleDeleted = (id) => setTables((prev) => prev.filter((x) => x._id !== id));
+    const handleMapUpdate = (t) => {
       setTables((prev) => {
         const exists = prev.find((x) => x._id === t._id);
         if (exists) return prev.map((x) => (x._id === t._id ? t : x));
         return [t, ...prev];
       });
-    });
+    };
+
+    socket.on("table_created", handleCreated);
+    socket.on("table_updated", handleUpdated);
+    socket.on("table_deleted", handleDeleted);
+    socket.on("table_map_update", handleMapUpdate);
+
     return () => {
-      socket.off("table_created");
-      socket.off("table_updated");
-      socket.off("table_deleted");
-      socket.off("table_map_update");
+      socket.off("table_created", handleCreated);
+      socket.off("table_updated", handleUpdated);
+      socket.off("table_deleted", handleDeleted);
+      socket.off("table_map_update", handleMapUpdate);
     };
   }, []);
 
-  const toggleStatus = async (table) => {
+  const toggleStatus = useCallback(async (table) => {
     try {
       const newStatus = table.status === "Available" ? "Occupied" : "Available";
       setTables((prev) => prev.map((x) => (x._id === table._id ? { ...x, status: newStatus } : x)));
       await API.patch("/admin/tables/toggle", { tableId: table._id, status: newStatus });
     } catch (e) {
+      console.error("Failed to toggle table status:", e);
     }
-  };
+  }, []);
 
-  const deleteTable = async (id) => {
+  const deleteTable = useCallback(async (id) => {
     try {
+      setTables((prev) => prev.filter((x) => x._id !== id));
       await API.delete(`/admin/tables/${id}`);
     } catch (e) {
+      console.error("Failed to delete table:", e);
     }
-  };
+  }, []);
 
-  const addTable = async (number, capacity) => {
+  const addTable = useCallback(async (number, capacity) => {
     try {
       const res = await API.post("/admin/tables", { number, capacity });
       const newTable = res.data?.table;
       if (!newTable) return;
       setTables((prev) => [newTable, ...prev]);
     } catch (e) {
+      console.error("Failed to add table:", e);
     }
-  };
+  }, []);
 
-  const filteredTables = tables.filter((t) => {
-    const matchFilter = filter === "all" || t.status === filter;
-    const matchSearch = t.number?.toLowerCase().includes(search.toLowerCase());
-    return matchFilter && matchSearch;
-  });
+  const filteredTables = useMemo(() => {
+    const searchLower = search.toLowerCase();
+    return tables.filter((t) => {
+      const matchFilter = filter === "all" || t.status === filter;
+      const matchSearch = String(t.number || "").toLowerCase().includes(searchLower);
+      return matchFilter && matchSearch;
+    });
+  }, [tables, filter, search]);
 
   return (
     <div className="flex min-h-screen w-full" style={{ backgroundColor: COLORS.bg }}>
@@ -118,7 +127,7 @@ const AdminTables = () => {
 
             <button
               onClick={() => setShowAddModal(true)}
-              className="w-full sm:w-auto justify-center flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-white font-semibold shadow-md hover:opacity-90"
+              className="w-full sm:w-auto justify-center flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-white font-semibold shadow-md hover:opacity-90 cursor-pointer transition-opacity"
               style={{ backgroundColor: COLORS.primary }}
             >
               <Plus size={16} />
@@ -132,7 +141,7 @@ const AdminTables = () => {
                 <button
                   key={s}
                   onClick={() => setFilter(s)}
-                  className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition ${
+                  className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition cursor-pointer ${
                     filter === s ? "bg-[#FC5C02] text-white shadow" : "bg-[#FC5C02]/10 text-[#312B1E]"
                   }`}
                 >
@@ -181,15 +190,15 @@ const AdminTables = () => {
                         <td className="px-4"><StatusBadge status={t.status} /></td>
                         <td className="px-4 text-center">
                           {t.qrCodeUrl ? (
-                            <button onClick={() => setQrPreview(t.qrCodeUrl)} className="px-2 py-1 text-xs rounded-lg bg-purple-100 text-purple-700 font-semibold">View QR</button>
+                            <button onClick={() => setQrPreview(t.qrCodeUrl)} className="px-2 py-1 text-xs rounded-lg bg-purple-100 text-purple-700 font-semibold cursor-pointer hover:bg-purple-200">View QR</button>
                           ) : (
                             <span className="text-xs text-gray-400">No QR</span>
                           )}
                         </td>
                         <td className="px-4">
                           <div className="flex gap-2">
-                            <button onClick={() => toggleStatus(t)} className="px-3 py-1 text-xs rounded-lg bg-blue-100 text-blue-700 font-semibold">Toggle</button>
-                            <button onClick={() => deleteTable(t._id)} className="px-3 py-1 text-xs rounded-lg bg-red-100 text-red-700 font-semibold flex items-center gap-1">
+                            <button onClick={() => toggleStatus(t)} className="px-3 py-1 text-xs rounded-lg bg-blue-100 text-blue-700 font-semibold cursor-pointer hover:bg-blue-200">Toggle</button>
+                            <button onClick={() => deleteTable(t._id)} className="px-3 py-1 text-xs rounded-lg bg-red-100 text-red-700 font-semibold flex items-center gap-1 cursor-pointer hover:bg-red-200">
                               <Trash2 size={12} /> Delete
                             </button>
                           </div>
@@ -222,17 +231,7 @@ const AdminTables = () => {
   );
 };
 
-const StatusBadge = ({ status }) => {
-  const styles = { Available: "bg-green-100 text-green-700", Occupied: "bg-red-100 text-red-700" };
-  const icons = { Available: <CheckCircle2 size={14} />, Occupied: <XCircle size={14} /> };
-  return (
-    <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs rounded-full font-semibold ${styles[status]}`}>
-      {icons[status]} {status}
-    </span>
-  );
-};
-
-const AddTableModal = ({ onClose, onAdd }) => {
+const AddTableModal = React.memo(({ onClose, onAdd }) => {
   const [number, setNumber] = useState("");
   const [capacity, setCapacity] = useState("");
 
@@ -249,18 +248,12 @@ const AddTableModal = ({ onClose, onAdd }) => {
         </div>
         <div className="flex justify-end gap-2 mt-6">
           <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-200 text-[#312B1E]">Cancel</button>
-          <button onClick={() => { if (!number) return; onAdd(number, capacity); onClose(); }} className="px-5 py-2 rounded-lg text-white font-semibold" style={{ backgroundColor: "#FC5C02" }}>Add</button>
+          <button onClick={() => { if (!number) return; onAdd(number, capacity); onClose(); }} className="px-5 py-2 rounded-lg text-white font-semibold cursor-pointer" style={{ backgroundColor: "#FC5C02" }}>Add</button>
         </div>
       </div>
     </div>
   );
-};
-
-const Input = ({ label, ...props }) => (
-  <div>
-    <label className="text-sm font-semibold text-[#312B1E]">{label}</label>
-    <input {...props} className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200" />
-  </div>
-);
+});
+AddTableModal.displayName = "AddTableModal";
 
 export default AdminTables;

@@ -8,15 +8,15 @@ const OrderFailed = () => {
   const location = useLocation();
 
   const orderData = location.state?.orderData;
+  const tableId = orderData?.tableId || orderData?.table?._id || "";
 
-  
   useEffect(() => {
     if (!orderData?.orderId) return;
 
     API.post("/payments/fail", {
       orderId: orderData.orderId,
-    }).catch(() => {
-      
+    }).catch((err) => {
+      console.error("Failed to mark payment as failed:", err);
     });
   }, [orderData]);
 
@@ -42,14 +42,14 @@ const OrderFailed = () => {
               state: { orderData },
             })
           }
-          className="bg-[#FC5C02] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 cursor-pointer"
+          className="bg-[#FC5C02] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 cursor-pointer hover:bg-orange-700 transition-colors"
         >
           <RefreshCcw size={18} /> Try Again
         </button>
 
         <button
-          onClick={() => navigate(`/order?tableId=${tableId}`)}
-          className="bg-white text-[#312B1E] px-6 py-3 rounded-xl font-bold cursor-pointer"
+          onClick={() => navigate(`/order${tableId ? `?tableId=${tableId}` : ""}`)}
+          className="bg-white text-[#312B1E] px-6 py-3 rounded-xl font-bold cursor-pointer hover:bg-gray-100 transition-colors"
         >
           Go Home
         </button>
@@ -73,4 +73,3 @@ const OrderFailed = () => {
 };
 
 export default OrderFailed;
-

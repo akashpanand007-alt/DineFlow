@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
@@ -8,22 +8,19 @@ import {
   Utensils,
 } from "lucide-react";
 import API from "../../api/api";
+import { normalizeProductList } from "../../utils/normalizeProduct";
 
 const CartPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  
   const tableId = location.state?.tableId || null;
-
-  
   const cart = location.state?.cart || {};
   const passedItems = location.state?.items || [];
 
   const [items, setItems] = useState(passedItems);
   const [instruction, setInstruction] = useState("");
 
-  
   useEffect(() => {
     if (passedItems.length === 0) {
       API.get("/product/list")
@@ -33,24 +30,15 @@ const CartPage = () => {
               ? res.data
               : res.data.products || res.data.data || [];
 
-          const normalized = list.map((p) => ({
-            id: p._id,
-            name: p.name,
-            price: p.basePrice,
-            category: p.category,
-            desc: p.description,
-            type: p.dietType === "NON_VEG" ? "non-veg" : "veg",
-            images: p.images || [],
-          }));
-
+          const normalized = normalizeProductList(list);
           setItems(normalized);
         })
         .catch((err) => {
+          console.error("Failed to fetch product list for cart:", err);
         });
     }
   }, [passedItems]);
 
- 
   const initialCartItems = useMemo(() => {
     return Object.keys(cart)
       .map((id) => {
@@ -70,38 +58,33 @@ const CartPage = () => {
     setCartItems(initialCartItems);
   }, [initialCartItems]);
 
- 
-  const itemTotal = cartItems.reduce(
-    (acc, item) => acc + item.price * item.qty,
-    0
+  const itemTotal = useMemo(
+    () => cartItems.reduce((acc, item) => acc + (item.price || 0) * item.qty, 0),
+    [cartItems]
   );
-  const taxes = Math.round(itemTotal * 0.05);
-  const grandTotal = itemTotal + taxes;
-
   
-  const updateQty = (id, delta) => {
+  const taxes = useMemo(() => Math.round(itemTotal * 0.05), [itemTotal]);
+  const grandTotal = useMemo(() => itemTotal + taxes, [itemTotal, taxes]);
+
+  const updateQty = useCallback((id, delta) => {
     setCartItems((prev) =>
       prev
         .map((item) =>
-          item.id === id
-            ? { ...item, qty: item.qty + delta }
-            : item
+          item.id === id ? { ...item, qty: item.qty + delta } : item
         )
         .filter((item) => item.qty > 0)
     );
-  };
+  }, []);
 
-  
-  const removeItem = (id) => {
+  const removeItem = useCallback((id) => {
     setCartItems((prev) => prev.filter((item) => item.id !== id));
-  };
+  }, []);
 
-  
   const handlePlaceOrder = () => {
     navigate("/checkout", {
       state: {
         orderData: {
-          tableId, 
+          tableId,
           cartItems,
           instruction,
           itemTotal,
@@ -112,7 +95,6 @@ const CartPage = () => {
     });
   };
 
-  
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-[#E2CEAE] flex flex-col items-center justify-center">
@@ -121,8 +103,8 @@ const CartPage = () => {
           Your Cart is Empty
         </h2>
         <button
-          onClick={() => navigate(`/order?tableId=${tableId}`)}
-          className="mt-5 bg-[#FC5C02] text-white px-8 py-3 rounded-xl font-bold cursor-pointer"
+          onClick={() => navigate(`/order?tableId=${tableId || ""}`)}
+          className="mt-5 bg-[#FC5C02] text-white px-8 py-3 rounded-xl font-bold cursor-pointer hover:bg-orange-700 transition-colors"
         >
           Browse Menu
         </button>
@@ -144,13 +126,13 @@ const CartPage = () => {
         </span>
       </header>
 
-      <div className="p-5">
+      <div className="p-5 max-w-lg mx-auto">
         {/* Cart Items */}
         <div className="mb-5 space-y-3">
           {cartItems.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-xl p-4 flex items-center justify-between"
+              className="bg-white rounded-xl p-4 flex items-center justify-between shadow-sm"
             >
               <div className="flex items-center flex-1">
                 <div
@@ -182,16 +164,16 @@ const CartPage = () => {
               <div className="flex items-center gap-4">
                 <div className="flex items-center border border-[#7C6B51]/40 rounded-md bg-[#F9F5F0]">
                   <button
-                    className="px-3 py-1 font-bold cursor-pointer"
+                    className="px-3 py-1 font-bold cursor-pointer text-[#312B1E]"
                     onClick={() => updateQty(item.id, -1)}
                   >
                     -
                   </button>
-                  <span className="px-2 font-bold">
+                  <span className="px-2 font-bold text-[#312B1E]">
                     {item.qty}
                   </span>
                   <button
-                    className="px-3 py-1 font-bold cursor-pointer"
+                    className="px-3 py-1 font-bold cursor-pointer text-[#312B1E]"
                     onClick={() => updateQty(item.id, 1)}
                   >
                     +
@@ -200,7 +182,7 @@ const CartPage = () => {
 
                 <Trash2
                   size={18}
-                  className="text-[#e74c3c] opacity-70 cursor-pointer"
+                  className="text-[#e74c3c] opacity-70 hover:opacity-100 cursor-pointer transition-opacity"
                   onClick={() => removeItem(item.id)}
                 />
               </div>
@@ -221,12 +203,12 @@ const CartPage = () => {
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
             placeholder="e.g., Less spicy, no coriander..."
-            className="w-full p-3 rounded-lg bg-[#F9F5F0] border border-[#7C6B51]/60 text-sm outline-none"
+            className="w-full p-3 rounded-lg bg-[#F9F5F0] border border-[#7C6B51]/60 text-sm outline-none focus:ring-2 focus:ring-[#FC5C02]"
           />
         </div>
 
         {/* Bill */}
-        <div className="bg-white rounded-xl p-5 space-y-3">
+        <div className="bg-white rounded-xl p-5 space-y-3 shadow-sm text-[#312B1E]">
           <div className="flex justify-between">
             <span>Item Total</span>
             <span>₹{itemTotal}</span>
@@ -235,7 +217,7 @@ const CartPage = () => {
             <span>Taxes & Charges (5%)</span>
             <span>₹{taxes}</span>
           </div>
-          <div className="flex justify-between text-xl font-black">
+          <div className="flex justify-between text-xl font-black border-t pt-3">
             <span>To Pay</span>
             <span className="text-[#FC5C02]">
               ₹{grandTotal}
@@ -245,7 +227,7 @@ const CartPage = () => {
       </div>
 
       {/* Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white px-5 py-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] flex justify-between items-center">
+      <div className="fixed bottom-0 left-0 right-0 bg-white px-5 py-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] flex justify-between items-center z-10 max-w-lg mx-auto">
         <div>
           <p className="text-[#7C6B51] text-sm">
             Total Payable
@@ -257,7 +239,7 @@ const CartPage = () => {
 
         <button
           onClick={handlePlaceOrder}
-          className="bg-[#FC5C02] text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 cursor-pointer"
+          className="bg-[#FC5C02] hover:bg-orange-700 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 cursor-pointer transition-colors"
         >
           Proceed <ChevronRight size={20} />
         </button>
@@ -267,5 +249,3 @@ const CartPage = () => {
 };
 
 export default CartPage;
-
-

@@ -8,85 +8,75 @@ const KitchenLiveNotification = () => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-  const handleOrderApproved = (order) => {
-    setOrder(order);
-    setVisible(true);
-  };
+    const handleOrderApproved = (approvedOrder) => {
+      setOrder(approvedOrder);
+      setVisible(true);
+    };
 
-  const joinKitchen = () => {
-    socket.emit("join_kitchen");
-  };
+    const joinKitchen = () => {
+      socket.emit("join_kitchen");
+    };
 
-  
-  socket.on("connect", joinKitchen);
-  socket.on("order_approved", handleOrderApproved);
-  socket.on("order_approved_global", handleOrderApproved);
+    socket.on("connect", joinKitchen);
+    socket.on("order_approved", handleOrderApproved);
+    socket.on("order_approved_global", handleOrderApproved);
 
-  
-  if (socket.connected) {
-    joinKitchen();
-  }
+    if (socket.connected) {
+      joinKitchen();
+    }
 
-  
-  const checkWaitingOrders = async () => {
-    try {
-      const res = await API.get("/orders/kitchen/active");
+    const checkWaitingOrders = async () => {
+      try {
+        const res = await API.get("/orders/kitchen/active");
+        const waiting = res.data.orders?.find(
+          (o) => o.kitchenStatus === "WAITING"
+        );
 
-      const waiting = res.data.orders?.find(
-        (o) => o.kitchenStatus === "WAITING"
-      );
-
-      if (waiting) {
-        setOrder(waiting);
-        setVisible(true);
+        if (waiting) {
+          setOrder(waiting);
+          setVisible(true);
+        }
+      } catch (err) {
+        console.error("Failed to check waiting orders:", err);
       }
-    } catch (err) {}
-  };
+    };
 
-  checkWaitingOrders();
+    checkWaitingOrders();
 
-  return () => {
-    
-    socket.off("order_approved", handleOrderApproved);
-    socket.off("order_approved_global", handleOrderApproved);
-    socket.off("connect", joinKitchen);
-  };
-}, []);
+    return () => {
+      socket.off("order_approved", handleOrderApproved);
+      socket.off("order_approved_global", handleOrderApproved);
+      socket.off("connect", joinKitchen);
+    };
+  }, []);
 
   const startPreparing = async () => {
-  if (!order) return;
+    if (!order) return;
 
-  try {
-    const orderId = order._id || order.id;
+    try {
+      const orderId = order._id || order.id;
 
-await API.put(`/orders/${orderId}/status`, {
-      kitchenStatus: "PREPARING",
-    });
+      await API.put(`/orders/${orderId}/status`, {
+        kitchenStatus: "PREPARING",
+      });
 
-    
-    socket.emit("order_status_changed", {
-      _id: order._id,
-      kitchenStatus: "PREPARING",
-    });
-
-    setVisible(false);
-    setTimeout(() => setOrder(null), 300);
-
-  } catch (err) {
-  }
-};
+      setVisible(false);
+      setTimeout(() => setOrder(null), 300);
+    } catch (err) {
+      console.error("Failed to update status to PREPARING:", err);
+    }
+  };
 
   if (!visible || !order) return null;
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 transition ${
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 transition duration-300 ${
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
-
-        <h2 className="text-lg font-bold mb-2">
+        <h2 className="text-lg font-bold mb-2 text-[#312B1E]">
           New Order for Kitchen
         </h2>
 
@@ -96,11 +86,11 @@ await API.put(`/orders/${orderId}/status`, {
 
         <div className="border-y py-3 mb-4 max-h-40 overflow-y-auto">
           {order.items?.map((item, i) => (
-            <div key={i} className="flex justify-between text-sm">
-              <span>
-                {item.name} × {item.quantity}
+            <div key={i} className="flex justify-between text-sm py-1">
+              <span className="text-gray-700">
+                {item.name} × {item.quantity || 1}
               </span>
-              <span className="font-semibold">
+              <span className="font-semibold text-gray-800">
                 ₹{item.price}
               </span>
             </div>
@@ -109,12 +99,11 @@ await API.put(`/orders/${orderId}/status`, {
 
         <button
           onClick={startPreparing}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-[#FC5C02] text-white rounded-xl font-semibold hover:bg-orange-700"
+          className="w-full flex items-center justify-center gap-2 py-3 bg-[#FC5C02] text-white rounded-xl font-semibold hover:bg-orange-700 cursor-pointer transition-colors"
         >
           <Flame size={18} />
           Start Preparing
         </button>
-
       </div>
     </div>
   );
